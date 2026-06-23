@@ -79,7 +79,7 @@ def tampilkan_form_auth():
     </div>
     """, unsafe_allow_html=True)
 
-    col_kiri, col_tengah, col_kanan = st.columns([1, 1.4, 1])
+    col_kiri, col_tengah, col_kanan = st.columns([1, 1.2, 1])
     with col_tengah:
         tab_login, tab_daftar = st.tabs(["🔑 Login", "📝 Daftar"])
 
