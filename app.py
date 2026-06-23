@@ -48,12 +48,24 @@ st.markdown("""
     transition: all 0.2s;
   }
 
-  .stButton > button {
+  .stButton > button,
+  .stFormSubmitButton > button,
+  button[kind="formSubmit"],
+  button[kind="primaryFormSubmit"] {
     background: linear-gradient(135deg, #1d4ed8, #2563eb) !important;
     color: white !important;
     border: none !important;
     border-radius: 12px !important;
     font-weight: 700 !important;
+    box-shadow: 0 4px 14px rgba(29,78,216,0.35) !important;
+    transition: all 0.2s !important;
+  }
+  .stButton > button:hover,
+  .stFormSubmitButton > button:hover,
+  button[kind="formSubmit"]:hover,
+  button[kind="primaryFormSubmit"]:hover {
+    box-shadow: 0 6px 20px rgba(29,78,216,0.5) !important;
+    transform: translateY(-1px);
   }
 
   h1, h2, h3 { color: #e0f2fe !important; }
@@ -83,12 +95,30 @@ st.markdown("""
     border: 1px solid rgba(59,130,246,0.2) !important;
     border-radius: 10px !important;
   }
+  .stTextInput input:focus, .stNumberInput input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.25) !important;
+  }
   .stSelectbox > div > div {
     background: rgba(59,130,246,0.08) !important;
     color: #e0f2fe !important;
     border: 1px solid rgba(59,130,246,0.2) !important;
   }
   .stCaption { color: #475569 !important; }
+
+  /* ===== Form Login/Daftar: bungkus jadi card biru, bukan kotak polos ===== */
+  [data-testid="stForm"] {
+    background: rgba(59,130,246,0.06);
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 20px;
+    padding: 28px 26px 8px;
+    box-shadow: 0 8px 32px rgba(2,11,24,0.4);
+  }
+  [data-testid="stForm"] label {
+    color: #93c5fd !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+  }
 </style>
 """, unsafe_allow_html=True)
 
