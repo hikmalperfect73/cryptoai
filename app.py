@@ -233,6 +233,38 @@ def auto_update_data(path_data, ticker):
 status_update, jumlah_baru = auto_update_data(cfg["csv"], cfg["ticker"])
 
 
+@st.cache_data(ttl=3600)  # 3600 detik = 1 jam
+def ambil_harga_live(ticker):
+    """
+    Ambil harga TERKINI (candle hari ini, yang masih berjalan/belum closed)
+    dari yFinance. Di-cache 1 jam supaya tidak memanggil API setiap kali
+    halaman di-refresh, tapi tetap jauh lebih sering dibanding update
+    harian yang hanya berjalan sekali per hari.
+
+    Hasil fungsi ini HANYA dipakai untuk tampilan ("Harga Terakhir" di
+    dashboard) — tidak ditulis ke CSV, supaya data historis yang dipakai
+    untuk evaluasi model (hitung_evaluasi) tetap berisi harga closing
+    resmi, bukan harga tengah hari yang masih bisa berubah.
+
+    Return: (harga_live: float | None, waktu_ambil: str | None)
+    """
+    try:
+        data_live = yf.download(
+            ticker, period="1d", interval="5m",
+            auto_adjust=True, progress=False
+        )
+        if isinstance(data_live.columns, pd.MultiIndex):
+            data_live.columns = data_live.columns.get_level_values(0)
+        if len(data_live) == 0:
+            return None, None
+
+        harga_live = float(data_live['Close'].iloc[-1])
+        waktu_ambil = datetime.now().strftime('%H:%M')
+        return harga_live, waktu_ambil
+    except Exception:
+        return None, None
+
+
 # ===== LOAD MODEL & EVALUASI =====
 def hitung_evaluasi(model, scaler, df, lookback=60):
     """
@@ -294,6 +326,17 @@ r2_pct = f"{r2_model*100:.1f}%" if r2_model is not None else "N/A"
 
 harga_terakhir = df['Close'].iloc[-1]
 harga_kemarin  = df['Close'].iloc[-2]
+
+# ===== OVERLAY HARGA LIVE (refresh tiap 1 jam, tidak ubah data historis) =====
+# harga_terakhir di atas adalah harga CLOSING resmi hari terakhir di CSV.
+# Kalau berhasil ambil harga live, kita pakai itu untuk tampilan supaya
+# lebih dekat ke harga pasar saat ini — tapi df & evaluasi model TETAP
+# memakai harga closing asli (tidak diubah), supaya prediksi LSTM tidak
+# tercemar oleh harga yang belum final.
+harga_live, waktu_live = ambil_harga_live(cfg["ticker"])
+if harga_live is not None:
+    harga_terakhir = harga_live
+
 perubahan      = ((harga_terakhir - harga_kemarin) / harga_kemarin) * 100
 pred           = prediksi(model, scaler, df, 7)
 chg7           = ((pred[6] - harga_terakhir) / harga_terakhir) * 100
@@ -370,6 +413,11 @@ with st.sidebar:
         st.caption("ℹ️ Tidak ada data baru tersedia")
     else:
         st.caption("✅ Data sudah terbaru")
+
+    if harga_live is not None:
+        st.caption(f"🟢 Harga live diambil {waktu_live} (refresh tiap 1 jam)")
+    else:
+        st.caption("⚪ Harga live tidak tersedia, memakai closing terakhir")
 
     st.divider()
     st.markdown(f"""
