@@ -154,45 +154,41 @@ def tampilkan_form_auth():
         box-shadow: 0 0 0 3px rgba(181,196,255,0.18) !important;
       }
 
-      /* ===== TABS — fix ukuran besar ===== */
+      /* ===== TABS: selector button[role="tab"] lebih spesifik dari data-baseweb ===== */
       .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-list"] {
         background: rgba(181,196,255,0.06) !important;
         border-radius: 14px !important;
         padding: 6px !important;
         gap: 6px !important;
         margin-bottom: 12px !important;
-        min-height: 62px !important;
       }
-      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] {
+      .auth-card-wrap [data-testid="stTabs"] button[role="tab"] {
         flex: 1 !important;
-        justify-content: center !important;
         background: transparent !important;
+        border: none !important;
         border-radius: 10px !important;
         color: var(--c-outline) !important;
-        font-weight: 700 !important;
-        font-size: 17px !important;
-        padding: 18px 0 !important;
-        height: auto !important;
-        min-height: 50px !important;
-      }
-      /* Paksa semua child element tab ikutin ukuran */
-      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] *,
-      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] p,
-      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] span,
-      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] div {
-        font-size: 17px !important;
+        font-size: 18px !important;
         font-weight: 700 !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
+        padding: 16px 32px !important;
+        height: auto !important;
+        min-height: 54px !important;
+        line-height: 1.2 !important;
+        cursor: pointer !important;
       }
-      .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] {
+      .auth-card-wrap [data-testid="stTabs"] button[role="tab"] * {
+        font-size: 18px !important;
+        font-weight: 700 !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        color: inherit !important;
+      }
+      .auth-card-wrap [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
         background: var(--c-primary-container) !important;
         color: var(--c-on-primary-container) !important;
         box-shadow: 0 6px 16px rgba(47,105,255,0.35) !important;
       }
-      .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] *,
-      .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] p,
-      .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] span,
-      .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] div {
+      .auth-card-wrap [data-testid="stTabs"] button[role="tab"][aria-selected="true"] * {
         color: var(--c-on-primary-container) !important;
       }
       .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-highlight"],
@@ -200,6 +196,7 @@ def tampilkan_form_auth():
         display: none !important;
       }
 
+      /* ===== Tombol submit ===== */
       .auth-card-wrap [data-testid="stFormSubmitButton"] button,
       .auth-card-wrap .stFormSubmitButton button {
         background: var(--c-primary-container) !important;
@@ -243,7 +240,6 @@ def tampilkan_form_auth():
     st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
     col_kiri, col_tengah, col_kanan = st.columns([0.7, 1.4, 0.7])
     with col_tengah:
-        # Tanpa ikon :material/...: di label tab — ikon bikin teks render kecil
         tab_login, tab_daftar = st.tabs(["Masuk", "Daftar"])
 
         with tab_login:
