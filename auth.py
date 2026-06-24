@@ -52,7 +52,6 @@ def logout():
 
 
 def tampilkan_form_auth():
-    # Track tab aktif via session_state
     if 'auth_tab' not in st.session_state:
         st.session_state['auth_tab'] = 'login'
 
@@ -128,7 +127,7 @@ def tampilkan_form_auth():
         margin-top: 4px; opacity: 0.85;
       }
 
-      /* ===== Custom tab bar (HTML murni, bukan st.tabs) ===== */
+      /* ===== Custom tab bar ===== */
       .auth-tabbar {
         display: flex;
         gap: 6px;
@@ -136,6 +135,7 @@ def tampilkan_form_auth():
         border-radius: 14px;
         padding: 6px;
         margin-bottom: 16px;
+        position: relative;
       }
       .auth-tab-btn {
         flex: 1;
@@ -146,15 +146,34 @@ def tampilkan_form_auth():
         font-size: 18px;
         font-weight: 700;
         color: var(--c-outline);
-        cursor: pointer;
-        border: none;
-        background: transparent;
-        transition: all 0.18s ease;
+        pointer-events: none;
       }
       .auth-tab-btn.active {
         background: var(--c-primary-container);
         color: var(--c-on-primary-container);
         box-shadow: 0 6px 16px rgba(47,105,255,0.35);
+      }
+
+      /* ===== Invisible button overlay untuk tab ===== */
+      .tab-btn-wrap {
+        display: flex;
+        gap: 6px;
+        margin-top: -62px;      /* naik ke atas tab bar HTML */
+        margin-bottom: 10px;
+        position: relative;
+        z-index: 10;
+      }
+      .tab-btn-wrap .stButton button {
+        opacity: 0 !important;
+        height: 52px !important;
+        width: 100% !important;
+        cursor: pointer !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+      .tab-btn-wrap [data-testid="column"] {
+        padding: 0 !important;
       }
 
       /* ===== Kartu form: glass panel ===== */
@@ -227,24 +246,30 @@ def tampilkan_form_auth():
     st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
     col_kiri, col_tengah, col_kanan = st.columns([0.7, 1.4, 0.7])
     with col_tengah:
-        # Custom tab bar — HTML murni, tidak pakai st.tabs()
         aktif = st.session_state['auth_tab']
         cls_login  = "auth-tab-btn active" if aktif == 'login'  else "auth-tab-btn"
         cls_daftar = "auth-tab-btn active" if aktif == 'daftar' else "auth-tab-btn"
 
+        # HTML tab bar (visual only, pointer-events: none)
         st.markdown(f"""
         <div class="auth-tabbar">
-          <div class="{cls_login}"  onclick="window.location.href='?tab=login'">Masuk</div>
-          <div class="{cls_daftar}" onclick="window.location.href='?tab=daftar'">Daftar</div>
+          <div class="{cls_login}">Masuk</div>
+          <div class="{cls_daftar}">Daftar</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Baca query param untuk switch tab
-        params = st.query_params
-        if 'tab' in params:
-            st.session_state['auth_tab'] = params['tab']
-            st.query_params.clear()
-            st.rerun()
+        # Invisible button overlay — ini yang handle klik
+        st.markdown('<div class="tab-btn-wrap">', unsafe_allow_html=True)
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            if st.button("Masuk", key="tab_btn_login", use_container_width=True):
+                st.session_state['auth_tab'] = 'login'
+                st.rerun()
+        with col_t2:
+            if st.button("Daftar", key="tab_btn_daftar", use_container_width=True):
+                st.session_state['auth_tab'] = 'daftar'
+                st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
         if st.session_state['auth_tab'] == 'login':
             with st.form("form_login"):
