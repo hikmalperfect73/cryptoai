@@ -62,157 +62,124 @@ def logout():
 
 def tampilkan_form_auth():
     """
-    Render halaman Login & Daftar dengan tema "night-city + koin melayang"
-    — background dibangun dari CSS/SVG murni (bintang, siluet kota,
-    candlestick chart neon, koin BTC/ETH bercahaya), sementara form input
-    tetap memakai widget asli Streamlit (st.form, st.text_input, dst) agar
-    validasi dan submit tetap berfungsi normal lewat fungsi login()/daftar().
+    Render halaman Login & Daftar bertema "Material 3 dark glass" —
+    palet token (primary/secondary=BTC/tertiary=ETH), kartu glassmorphism
+    dengan blur, badge brand melayang, dan tab bertanda ikon Material
+    Symbols asli (shorthand `:material/...:` Streamlit, BUKAN emoji).
+
+    Widget input tetap memakai st.form/st.text_input asli Streamlit agar
+    validasi & submit tetap jalan normal lewat login()/daftar().
 
     Dipanggil HANYA ketika belum ada user yang login (is_logged_in() == False).
     """
     st.markdown("""
     <style>
-      /* ===================================================================
-         BACKGROUND HALAMAN LOGIN — night sky + skyline + koin + candlestick
-         Catatan: ini HANYA berlaku selagi form auth ditampilkan, karena
-         dirender lewat st.markdown di awal tampilkan_form_auth().
-      =================================================================== */
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500&family=Geist:wght@500;600&display=swap');
+
+      :root {
+        --c-primary: #b5c4ff;
+        --c-primary-container: #2f69ff;
+        --c-on-primary-container: #fffeff;
+        --c-secondary: #ffb874;        /* BTC */
+        --c-secondary-container: #e78603;
+        --c-tertiary: #4cd6ff;         /* ETH */
+        --c-tertiary-container: #00809d;
+        --c-background: #0c1322;
+        --c-surface-lowest: #070e1d;
+        --c-on-surface: #dce2f8;
+        --c-outline: #8d90a1;
+      }
+
       [data-testid="stAppViewContainer"] > .main {
         background:
-          radial-gradient(ellipse 700px 380px at 12% 28%, rgba(247,147,26,0.16), transparent 60%),
-          radial-gradient(ellipse 500px 300px at 88% 20%, rgba(98,126,234,0.14), transparent 60%),
-          linear-gradient(180deg, #020611 0%, #061229 35%, #0a1c3d 65%, #0d2347 100%) !important;
+          radial-gradient(ellipse 620px 420px at 8% 10%, rgba(181,196,255,0.07), transparent 55%),
+          radial-gradient(ellipse 520px 380px at 95% 90%, rgba(255,184,116,0.06), transparent 55%),
+          linear-gradient(180deg, #05080f 0%, #0c1322 100%) !important;
         background-attachment: fixed !important;
       }
-
       [data-testid="stHeader"] {
-        background: linear-gradient(180deg, #020611 0%, #061229 100%) !important;
-        border-bottom: 1px solid rgba(59,130,246,0.12);
+        background: linear-gradient(180deg, #05080f 0%, #0c1322 100%) !important;
+        border-bottom: 1px solid rgba(181,196,255,0.06);
       }
-      [data-testid="stHeader"]::before {
-        content: none !important;
-      }
-      [data-testid="stDecoration"] {
-        background: transparent !important;
-        display: none !important;
-      }
+      [data-testid="stDecoration"] { display: none !important; }
 
-      .auth-stars {
-        position: fixed; inset: 0; z-index: 0; pointer-events: none;
-        background-image:
-          radial-gradient(1px 1px at 8% 12%, white, transparent),
-          radial-gradient(1px 1px at 22% 30%, white, transparent),
-          radial-gradient(1.5px 1.5px at 35% 8%, white, transparent),
-          radial-gradient(1px 1px at 48% 22%, white, transparent),
-          radial-gradient(1px 1px at 62% 35%, white, transparent),
-          radial-gradient(1.5px 1.5px at 75% 14%, white, transparent),
-          radial-gradient(1px 1px at 88% 28%, white, transparent),
-          radial-gradient(1px 1px at 95% 10%, white, transparent);
-        background-repeat: repeat;
-        background-size: 100% 45%;
-        opacity: 0.5;
-        animation: auth-twinkle 4s ease-in-out infinite alternate;
-      }
-      @keyframes auth-twinkle { from { opacity: 0.32; } to { opacity: 0.58; } }
-
+      /* ===== Koin melayang dekoratif ===== */
       .auth-koin {
         position: fixed; z-index: 0; pointer-events: none;
         display: flex; align-items: center; justify-content: center;
-        border-radius: 50%; font-weight: 800; font-family: inherit;
+        border-radius: 50%; font-weight: 800; font-family: 'Plus Jakarta Sans', sans-serif;
       }
       .auth-koin-btc {
-        width: 84px; height: 84px; left: 6%; top: 16%; font-size: 36px;
-        color: #fff7e8;
-        background: radial-gradient(circle at 35% 30%, #ffc266, #f7931a 55%, #c2740a 100%);
-        box-shadow: 0 0 70px 14px rgba(247,147,26,0.5), 0 0 26px 4px rgba(255,200,80,0.55), inset 0 0 16px rgba(255,255,255,0.3);
-        animation: auth-float-a 7s ease-in-out infinite;
+        width: 72px; height: 72px; left: 7%; top: 14%; font-size: 30px;
+        color: #2d1600;
+        background: radial-gradient(circle at 35% 30%, var(--c-secondary), var(--c-secondary-container) 70%);
+        box-shadow: 0 0 50px 10px rgba(255,184,116,0.30);
+        opacity: 0.85;
+        animation: auth-float-a 6.5s ease-in-out infinite;
       }
       .auth-koin-eth {
-        width: 60px; height: 60px; right: 8%; top: 12%; font-size: 26px;
-        color: #f3f4ff;
-        background: radial-gradient(circle at 35% 30%, #8a9bff, #627eea 55%, #3b4dab 100%);
-        box-shadow: 0 0 38px 6px rgba(98,126,234,0.45), inset 0 0 12px rgba(255,255,255,0.25);
-        animation: auth-float-b 8.5s ease-in-out infinite;
-      }
-      .auth-koin-btc-2 {
-        width: 40px; height: 40px; left: 12%; top: 62%; font-size: 17px;
-        color: #fff7e8;
-        background: radial-gradient(circle at 35% 30%, #ffc266, #f7931a 55%, #c2740a 100%);
-        box-shadow: 0 0 22px 4px rgba(247,147,26,0.4);
+        width: 54px; height: 54px; right: 9%; bottom: 18%; font-size: 22px;
+        color: #001f28;
+        background: radial-gradient(circle at 35% 30%, var(--c-tertiary), var(--c-tertiary-container) 70%);
+        box-shadow: 0 0 40px 8px rgba(76,214,255,0.28);
         opacity: 0.75;
-        animation: auth-float-d 9s ease-in-out infinite;
+        animation: auth-float-b 8s ease-in-out infinite;
       }
-      .auth-koin-eth-2 {
-        width: 34px; height: 34px; right: 14%; top: 56%; font-size: 15px;
-        color: #f3f4ff;
-        background: radial-gradient(circle at 35% 30%, #8a9bff, #627eea 55%, #3b4dab 100%);
-        box-shadow: 0 0 20px 3px rgba(98,126,234,0.4);
-        opacity: 0.75;
-        animation: auth-float-c 6s ease-in-out infinite;
-      }
-      .auth-koin-btc-3 {
-        width: 30px; height: 30px; left: 2%; top: 40%; font-size: 13px;
-        color: #fff7e8;
-        background: radial-gradient(circle at 35% 30%, #ffc266, #f7931a 55%, #c2740a 100%);
-        box-shadow: 0 0 18px 3px rgba(247,147,26,0.35);
-        opacity: 0.6;
-        animation: auth-float-b 10s ease-in-out infinite;
-      }
-      .auth-koin-eth-3 {
-        width: 26px; height: 26px; right: 2%; top: 44%; font-size: 12px;
-        color: #f3f4ff;
-        background: radial-gradient(circle at 35% 30%, #8a9bff, #627eea 55%, #3b4dab 100%);
-        box-shadow: 0 0 16px 3px rgba(98,126,234,0.35);
-        opacity: 0.6;
-        animation: auth-float-a 11s ease-in-out infinite;
-      }
-      @keyframes auth-float-a { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-18px) rotate(4deg); } }
-      @keyframes auth-float-b { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(14px) rotate(-5deg); } }
-      @keyframes auth-float-c { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-      @keyframes auth-float-d { 0%,100% { transform: translateY(0); } 50% { transform: translateY(13px); } }
+      @keyframes auth-float-a { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-18px) rotate(5deg); } }
+      @keyframes auth-float-b { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(16px) rotate(-5deg); } }
 
-      .auth-skyline {
-        position: fixed; bottom: 0; left: 0; right: 0; height: 30%; z-index: 0; pointer-events: none;
-        background: linear-gradient(180deg, transparent 0%, rgba(2,6,17,0.5) 45%, rgba(2,6,17,0.94) 100%);
+      /* ===== Brand header ===== */
+      .auth-brand { text-align: center; padding: 36px 0 6px; position: relative; z-index: 2; }
+      .auth-brand-badge {
+        width: 60px; height: 60px; margin: 0 auto 14px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 18px; transform: rotate(12deg);
+        font-size: 26px; color: var(--c-on-primary-container);
+        background: var(--c-primary-container);
+        box-shadow: 0 0 24px rgba(47,105,255,0.45);
       }
-      .auth-skyline svg { position:absolute; bottom:0; width:100%; height:100%; }
-      .auth-skyline-lights {
-        position: absolute; bottom: 0; left: 0; right: 0; height: 75%;
-        background-image: radial-gradient(1.5px 1.5px, #ffce6b 45%, transparent 50%);
-        background-size: 38px 26px;
-        background-position: 12px 8px;
-        opacity: 0.4;
+      .auth-brand-title {
+        font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800;
+        font-size: 24px; color: var(--c-on-surface); letter-spacing: -0.01em;
+      }
+      .auth-brand-sub {
+        font-family: 'Inter', sans-serif; font-size: 13px; color: var(--c-outline);
+        margin-top: 4px; opacity: 0.85;
       }
 
-      .auth-candles {
-        position: fixed; top: 0; left: 0; right: 0; height: 55%; z-index: 0; pointer-events: none;
-        opacity: 0.3;
-        filter: drop-shadow(0 0 6px rgba(56,189,248,0.35));
-        animation: auth-chart-pulse 5s ease-in-out infinite alternate;
-      }
-      @keyframes auth-chart-pulse { from { opacity: 0.2; } to { opacity: 0.36; } }
-
-      /* ===== Card form: bungkus jadi modal melayang dgn backdrop blur ===== */
+      /* ===== Kartu form: glass panel ===== */
       .auth-card-wrap [data-testid="stVerticalBlockBorderWrapper"],
       .auth-card-wrap [data-testid="stForm"] {
-        background: rgba(10,22,45,0.55) !important;
+        background: rgba(25,31,47,0.55) !important;
         backdrop-filter: blur(18px);
         -webkit-backdrop-filter: blur(18px);
-        border: 1px solid rgba(125,211,252,0.18) !important;
-        border-radius: 22px !important;
-        box-shadow: 0 24px 70px rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.06) !important;
+        border-radius: 20px !important;
+        box-shadow: 0 0 36px 6px rgba(47,105,255,0.10), 0 20px 60px rgba(0,0,0,0.45);
       }
       .auth-card-wrap [data-testid="stForm"] label {
-        color: #93c5fd !important;
-        font-weight: 700 !important;
-        font-size: 12.5px !important;
+        color: var(--c-outline) !important;
+        font-family: 'Geist', sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 11.5px !important;
         text-transform: uppercase;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.06em;
+      }
+      .auth-card-wrap [data-testid="stForm"] input {
+        background: var(--c-surface-lowest) !important;
+        border: 1px solid rgba(255,255,255,0.05) !important;
+        border-radius: 12px !important;
+        color: var(--c-on-surface) !important;
+        padding: 12px 14px !important;
+      }
+      .auth-card-wrap [data-testid="stForm"] input:focus {
+        border-color: var(--c-primary) !important;
+        box-shadow: 0 0 0 3px rgba(181,196,255,0.18) !important;
       }
 
-      /* ===== Tab Masuk/Daftar: dibesarkan, tanpa ikon emoji ===== */
+      /* ===== Tabs Masuk/Daftar dgn ikon Material Symbols asli ===== */
       .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-list"] {
-        background: rgba(59,130,246,0.08);
+        background: rgba(181,196,255,0.06);
         border-radius: 14px;
         padding: 6px;
         gap: 6px;
@@ -222,116 +189,77 @@ def tampilkan_form_auth():
         flex: 1;
         justify-content: center;
         background: transparent;
-        border-radius: 11px;
-        color: rgba(186,210,240,0.65);
-        font-weight: 700 !important;
-        font-size: 16px !important;
-        padding: 14px 0 !important;
+        border-radius: 10px;
+        color: var(--c-outline);
+        font-family: 'Geist', sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
+        padding: 13px 0 !important;
         height: auto !important;
       }
       .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] p {
-        font-size: 16px !important;
-        font-weight: 700 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
       }
       .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] {
-        background: linear-gradient(135deg, #1d4ed8, #0ea5e9) !important;
-        color: white !important;
-        box-shadow: 0 6px 18px rgba(29,78,216,0.4);
+        background: var(--c-primary-container) !important;
+        color: var(--c-on-primary-container) !important;
+        box-shadow: 0 6px 16px rgba(47,105,255,0.35);
       }
       .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-highlight"],
       .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-border"] {
         display: none !important;
       }
+
+      /* ===== Tombol submit ===== */
+      .auth-card-wrap [data-testid="stFormSubmitButton"] button {
+        background: var(--c-primary-container) !important;
+        color: var(--c-on-primary-container) !important;
+        border: none !important;
+        border-radius: 14px !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-weight: 700 !important;
+        padding: 12px 0 !important;
+        box-shadow: 0 8px 22px rgba(47,105,255,0.28) !important;
+      }
+      .auth-card-wrap [data-testid="stFormSubmitButton"] button:hover {
+        opacity: 0.92;
+      }
+
+      .auth-footer-note {
+        text-align: center; font-family: 'Inter', sans-serif; font-size: 12.5px;
+        color: var(--c-outline); margin-top: 14px; position: relative; z-index: 2;
+      }
+      .auth-footer-note b { color: var(--c-primary); }
+
+      /* ===== Dekorasi bar-chart bawah ===== */
+      .auth-bars {
+        display: flex; align-items: flex-end; justify-content: center; gap: 6px;
+        height: 56px; max-width: 240px; margin: 28px auto 0; opacity: 0.22;
+      }
+      .auth-bars div { width: 8px; border-radius: 3px 3px 0 0; background: var(--c-primary); }
     </style>
 
-    <div class="auth-stars"></div>
-    <svg class="auth-candles" viewBox="0 0 1440 350" preserveAspectRatio="none">
-      <g stroke="#1d4ed8" stroke-width="1" opacity="0.22">
-        <line x1="0" y1="70" x2="1440" y2="70"/>
-        <line x1="0" y1="150" x2="1440" y2="150"/>
-        <line x1="0" y1="230" x2="1440" y2="230"/>
-      </g>
-      <g stroke-width="2">
-        <line x1="50"  y1="180" x2="50"  y2="250" stroke="#34d399"/>
-        <rect x="40"  y="200" width="20" height="35" fill="#34d399"/>
-        <line x1="95"  y1="150" x2="95"  y2="220" stroke="#f43f5e"/>
-        <rect x="85"  y="160" width="20" height="32" fill="#f43f5e"/>
-        <line x1="140" y1="120" x2="140" y2="195" stroke="#34d399"/>
-        <rect x="130" y="135" width="20" height="40" fill="#34d399"/>
-        <line x1="185" y1="95"  x2="185" y2="170" stroke="#34d399"/>
-        <rect x="175" y="105" width="20" height="45" fill="#34d399"/>
-        <line x1="230" y1="115" x2="230" y2="185" stroke="#f43f5e"/>
-        <rect x="220" y="125" width="20" height="35" fill="#f43f5e"/>
-        <line x1="1210" y1="100" x2="1210" y2="175" stroke="#34d399"/>
-        <rect x="1200" y="110" width="20" height="42" fill="#34d399"/>
-        <line x1="1255" y1="130" x2="1255" y2="200" stroke="#f43f5e"/>
-        <rect x="1245" y="140" width="20" height="36" fill="#f43f5e"/>
-        <line x1="1300" y1="80"  x2="1300" y2="155" stroke="#34d399"/>
-        <rect x="1290" y="90"  width="20" height="44" fill="#34d399"/>
-        <line x1="1345" y1="105" x2="1345" y2="180" stroke="#34d399"/>
-        <rect x="1335" y="115" width="20" height="40" fill="#34d399"/>
-        <line x1="1390" y1="60"  x2="1390" y2="140" stroke="#34d399"/>
-        <rect x="1380" y="70"  width="20" height="46" fill="#34d399"/>
-      </g>
-    </svg>
     <div class="auth-koin auth-koin-btc">₿</div>
     <div class="auth-koin auth-koin-eth">Ξ</div>
-    <div class="auth-koin auth-koin-btc-2">₿</div>
-    <div class="auth-koin auth-koin-eth-2">Ξ</div>
-    <div class="auth-koin auth-koin-btc-3">₿</div>
-    <div class="auth-koin auth-koin-eth-3">Ξ</div>
-    <div class="auth-skyline">
-      <svg viewBox="0 0 1440 250" preserveAspectRatio="none">
-        <g fill="#03101f">
-          <rect x="0" y="120" width="70" height="130"/>
-          <rect x="80" y="80" width="50" height="170"/>
-          <rect x="140" y="140" width="65" height="110"/>
-          <rect x="215" y="60" width="44" height="190"/>
-          <rect x="270" y="110" width="80" height="140"/>
-          <rect x="360" y="35" width="40" height="215"/>
-          <rect x="410" y="95" width="68" height="155"/>
-          <rect x="490" y="70" width="52" height="180"/>
-          <rect x="555" y="130" width="75" height="120"/>
-          <rect x="640" y="20" width="36" height="230"/>
-          <rect x="685" y="90" width="60" height="160"/>
-          <rect x="755" y="120" width="70" height="130"/>
-          <rect x="835" y="50" width="46" height="200"/>
-          <rect x="890" y="100" width="65" height="150"/>
-          <rect x="965" y="70" width="50" height="180"/>
-          <rect x="1025" y="135" width="72" height="115"/>
-          <rect x="1110" y="30" width="38" height="220"/>
-          <rect x="1155" y="95" width="60" height="155"/>
-          <rect x="1225" y="125" width="68" height="125"/>
-          <rect x="1305" y="65" width="48" height="185"/>
-          <rect x="1365" y="105" width="75" height="145"/>
-        </g>
-      </svg>
-      <div class="auth-skyline-lights"></div>
-    </div>
 
-    <div style='text-align:center; padding:36px 0 8px; position:relative; z-index:2'>
-      <div style='width:60px; height:60px;
-           background:linear-gradient(135deg,#1d4ed8,#0ea5e9);
-           border-radius:16px; display:flex; align-items:center;
-           justify-content:center; font-size:28px; margin:0 auto 12px;
-           box-shadow:0 8px 24px rgba(29,78,216,0.5)'>₿</div>
-      <div style='font-size:24px; font-weight:800; color:#f0f7ff'>Masuk ke CryptoAI</div>
-      <div style='font-size:13px; color:rgba(148,180,219,0.85); margin-top:4px'>
-        Dashboard prediksi BTC & ETH dengan LSTM
-      </div>
+    <div class="auth-brand">
+      <div class="auth-brand-badge">₿</div>
+      <div class="auth-brand-title">Masuk ke CryptoAI</div>
+      <div class="auth-brand-sub">Dashboard prediksi BTC &amp; ETH dengan LSTM</div>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
     col_kiri, col_tengah, col_kanan = st.columns([0.7, 1.4, 0.7])
     with col_tengah:
-        tab_login, tab_daftar = st.tabs(["Masuk", "Daftar"])
+        tab_login, tab_daftar = st.tabs([":material/login: Masuk", ":material/person_add: Daftar"])
 
         with tab_login:
             with st.form("form_login"):
                 u = st.text_input("Email", key="login_user", placeholder="nama@email.com")
                 p = st.text_input("Password", type="password", key="login_pass", placeholder="••••••••")
-                submit = st.form_submit_button("Masuk", type="primary", use_container_width=True)
+                submit = st.form_submit_button(":material/login: Masuk", type="primary", use_container_width=True)
             if submit:
                 ok, pesan = login(u, p)
                 if ok:
@@ -340,8 +268,7 @@ def tampilkan_form_auth():
                 else:
                     st.error(pesan)
             st.markdown(
-                "<div style='text-align:center; font-size:12.5px; color:rgba(148,180,219,0.7); margin-top:4px'>"
-                "Belum punya akun? Buka tab <b style='color:#7dd3fc'>Daftar</b> di atas.</div>",
+                "<div class='auth-footer-note'>Belum punya akun? Buka tab <b>Daftar</b> di atas.</div>",
                 unsafe_allow_html=True
             )
 
@@ -350,7 +277,7 @@ def tampilkan_form_auth():
                 u = st.text_input("Email", key="daftar_user", placeholder="nama@email.com")
                 p = st.text_input("Password", type="password", key="daftar_pass", placeholder="Minimal 6 karakter")
                 p2 = st.text_input("Konfirmasi Password", type="password", key="daftar_pass2", placeholder="Ulangi password")
-                submit = st.form_submit_button("Buat Akun", type="primary", use_container_width=True)
+                submit = st.form_submit_button(":material/person_add: Buat Akun", type="primary", use_container_width=True)
             if submit:
                 ok, pesan = daftar(u, p, p2)
                 if ok:
@@ -358,3 +285,11 @@ def tampilkan_form_auth():
                 else:
                     st.error(pesan)
     st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="auth-bars">
+      <div style="height:40%"></div><div style="height:65%"></div><div style="height:35%"></div>
+      <div style="height:85%"></div><div style="height:55%"></div><div style="height:95%"></div>
+      <div style="height:45%"></div><div style="height:70%"></div>
+    </div>
+    """, unsafe_allow_html=True)
