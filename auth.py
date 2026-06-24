@@ -85,6 +85,18 @@ def tampilkan_form_auth():
         background-attachment: fixed !important;
       }
 
+      [data-testid="stHeader"] {
+        background: linear-gradient(180deg, #020611 0%, #061229 100%) !important;
+        border-bottom: 1px solid rgba(59,130,246,0.12);
+      }
+      [data-testid="stHeader"]::before {
+        content: none !important;
+      }
+      [data-testid="stDecoration"] {
+        background: transparent !important;
+        display: none !important;
+      }
+
       .auth-stars {
         position: fixed; inset: 0; z-index: 0; pointer-events: none;
         background-image:
@@ -138,6 +150,22 @@ def tampilkan_form_auth():
         opacity: 0.75;
         animation: auth-float-c 6s ease-in-out infinite;
       }
+      .auth-koin-btc-3 {
+        width: 30px; height: 30px; left: 2%; top: 40%; font-size: 13px;
+        color: #fff7e8;
+        background: radial-gradient(circle at 35% 30%, #ffc266, #f7931a 55%, #c2740a 100%);
+        box-shadow: 0 0 18px 3px rgba(247,147,26,0.35);
+        opacity: 0.6;
+        animation: auth-float-b 10s ease-in-out infinite;
+      }
+      .auth-koin-eth-3 {
+        width: 26px; height: 26px; right: 2%; top: 44%; font-size: 12px;
+        color: #f3f4ff;
+        background: radial-gradient(circle at 35% 30%, #8a9bff, #627eea 55%, #3b4dab 100%);
+        box-shadow: 0 0 16px 3px rgba(98,126,234,0.35);
+        opacity: 0.6;
+        animation: auth-float-a 11s ease-in-out infinite;
+      }
       @keyframes auth-float-a { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-18px) rotate(4deg); } }
       @keyframes auth-float-b { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(14px) rotate(-5deg); } }
       @keyframes auth-float-c { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
@@ -148,6 +176,13 @@ def tampilkan_form_auth():
         background: linear-gradient(180deg, transparent 0%, rgba(2,6,17,0.5) 45%, rgba(2,6,17,0.94) 100%);
       }
       .auth-skyline svg { position:absolute; bottom:0; width:100%; height:100%; }
+      .auth-skyline-lights {
+        position: absolute; bottom: 0; left: 0; right: 0; height: 75%;
+        background-image: radial-gradient(1.5px 1.5px, #ffce6b 45%, transparent 50%);
+        background-size: 38px 26px;
+        background-position: 12px 8px;
+        opacity: 0.4;
+      }
 
       .auth-candles {
         position: fixed; top: 0; left: 0; right: 0; height: 55%; z-index: 0; pointer-events: none;
@@ -210,6 +245,8 @@ def tampilkan_form_auth():
     <div class="auth-koin auth-koin-eth">Ξ</div>
     <div class="auth-koin auth-koin-btc-2">₿</div>
     <div class="auth-koin auth-koin-eth-2">Ξ</div>
+    <div class="auth-koin auth-koin-btc-3">₿</div>
+    <div class="auth-koin auth-koin-eth-3">Ξ</div>
     <div class="auth-skyline">
       <svg viewBox="0 0 1440 250" preserveAspectRatio="none">
         <g fill="#03101f">
@@ -235,17 +272,8 @@ def tampilkan_form_auth():
           <rect x="1305" y="65" width="48" height="185"/>
           <rect x="1365" y="105" width="75" height="145"/>
         </g>
-        <g fill="#ffce6b" fill-opacity="0.5">
-          <rect x="25" y="150" width="6" height="8"/><rect x="95" y="105" width="6" height="8"/>
-          <rect x="160" y="175" width="6" height="8"/><rect x="230" y="85" width="6" height="8"/>
-          <rect x="290" y="145" width="6" height="8"/><rect x="375" y="60" width="6" height="8"/>
-          <rect x="430" y="120" width="6" height="8"/><rect x="505" y="95" width="6" height="8"/>
-          <rect x="575" y="160" width="6" height="8"/><rect x="655" y="45" width="6" height="8"/>
-          <rect x="775" y="150" width="6" height="8"/><rect x="910" y="125" width="6" height="8"/>
-          <rect x="1045" y="165" width="6" height="8"/><rect x="1175" y="115" width="6" height="8"/>
-          <rect x="1325" y="90" width="6" height="8"/>
-        </g>
       </svg>
+      <div class="auth-skyline-lights"></div>
     </div>
 
     <div style='text-align:center; padding:36px 0 8px; position:relative; z-index:2'>
@@ -262,7 +290,7 @@ def tampilkan_form_auth():
     """, unsafe_allow_html=True)
 
     st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
-    col_kiri, col_tengah, col_kanan = st.columns([1, 1.2, 1])
+    col_kiri, col_tengah, col_kanan = st.columns([0.7, 1.4, 0.7])
     with col_tengah:
         tab_login, tab_daftar = st.tabs(["🔑 Masuk", "📝 Daftar"])
 
