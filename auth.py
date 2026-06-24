@@ -1,288 +1,380 @@
-"""
-auth.py — Logika autentikasi: daftar, login, keluar, dan form UI-nya.
-"""
-
-import bcrypt
 import streamlit as st
+import bcrypt
 import db
 
+# ─── Password hashing ──────────────────────────────────────────────────────────
 
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
+def cek_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
 
-def cek_password(password: str, password_hash: str) -> bool:
-    return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
-
+# ─── Session helpers ───────────────────────────────────────────────────────────
 
 def is_logged_in() -> bool:
-    return st.session_state.get('user_id') is not None
+    return st.session_state.get("user_id") is not None
 
-
-def login(username: str, password: str) -> tuple[bool, str]:
+def login(username: str, password: str) -> bool:
     user = db.get_user_by_username(username)
-    if not user:
-        return False, "Username belum terdaftar."
-    if not cek_password(password, user['password_hash']):
-        return False, "Password salah."
-    st.session_state['user_id'] = user['id']
-    st.session_state['username'] = user['username']
-    return True, "Login berhasil."
+    if user and cek_password(password, user["password_hash"]):
+        st.session_state["user_id"] = user["id"]
+        st.session_state["username"] = user["username"]
+        return True
+    return False
 
-
-def daftar(username: str, password: str, konfirmasi: str) -> tuple[bool, str]:
-    username = username.strip()
-    if len(username) < 3:
-        return False, "Username minimal 3 karakter."
+def daftar(username: str, password: str) -> tuple[bool, str]:
+    if db.get_user_by_username(username):
+        return False, "Username sudah dipakai."
     if len(password) < 6:
         return False, "Password minimal 6 karakter."
-    if password != konfirmasi:
-        return False, "Konfirmasi password tidak cocok."
-    if db.get_user_by_username(username):
-        return False, "Username sudah dipakai, pilih yang lain."
-    berhasil = db.create_user(username, hash_password(password))
-    if not berhasil:
-        return False, "Username sudah dipakai, pilih yang lain."
-    return True, "Akun berhasil dibuat! Silakan login."
-
+    hashed = hash_password(password)
+    db.create_user(username, hashed)
+    return True, "Akun berhasil dibuat."
 
 def logout():
-    for key in ('user_id', 'username'):
+    for key in ["user_id", "username"]:
         st.session_state.pop(key, None)
 
+# ─── Login page UI ─────────────────────────────────────────────────────────────
 
 def tampilkan_form_auth():
-    if 'auth_tab' not in st.session_state:
-        st.session_state['auth_tab'] = 'Masuk'
+    """Render halaman login bertema night-city dengan tab Masuk/Daftar."""
 
+    # ── Init session state ──────────────────────────────────────────────────
+    if "auth_tab" not in st.session_state:
+        st.session_state["auth_tab"] = "masuk"
+
+    # ── Global CSS + dekorasi ───────────────────────────────────────────────
     st.markdown("""
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500&family=Geist:wght@500;600&display=swap');
+    /* ── Reset Streamlit chrome ── */
+    [data-testid="stHeader"]      { background: transparent !important; border-bottom: none !important; }
+    [data-testid="stDecoration"]  { display: none !important; }
+    [data-testid="stToolbar"]     { display: none !important; }
+    .block-container              { padding-top: 0 !important; max-width: 100% !important; }
 
-      :root {
-        --c-primary: #b5c4ff;
-        --c-primary-container: #2f69ff;
-        --c-on-primary-container: #fffeff;
-        --c-secondary: #ffb874;
-        --c-secondary-container: #e78603;
-        --c-tertiary: #4cd6ff;
-        --c-tertiary-container: #00809d;
-        --c-surface-lowest: #070e1d;
-        --c-on-surface: #dce2f8;
-        --c-outline: #8d90a1;
-      }
+    /* ── Full-page background ── */
+    .stApp {
+        background: linear-gradient(180deg, #020818 0%, #050d2a 40%, #0a1a3e 70%, #0d1f4a 100%);
+        min-height: 100vh;
+        overflow: hidden;
+    }
 
-      [data-testid="stAppViewContainer"] > .main {
-        background:
-          radial-gradient(ellipse 620px 420px at 8% 10%, rgba(181,196,255,0.07), transparent 55%),
-          radial-gradient(ellipse 520px 380px at 95% 90%, rgba(255,184,116,0.06), transparent 55%),
-          linear-gradient(180deg, #05080f 0%, #0c1322 100%) !important;
-        background-attachment: fixed !important;
-      }
-      [data-testid="stHeader"] {
-        background: linear-gradient(180deg, #05080f 0%, #0c1322 100%) !important;
-        border-bottom: 1px solid rgba(181,196,255,0.06);
-      }
-      [data-testid="stDecoration"] { display: none !important; }
+    /* ── Bintang ── */
+    .stars-layer {
+        position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        background-image:
+            radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.9) 0%, transparent 100%),
+            radial-gradient(1px 1px at 25% 8%,  rgba(255,255,255,0.7) 0%, transparent 100%),
+            radial-gradient(1.5px 1.5px at 40% 22%, rgba(255,255,255,0.8) 0%, transparent 100%),
+            radial-gradient(1px 1px at 55% 5%,  rgba(255,255,255,0.6) 0%, transparent 100%),
+            radial-gradient(1px 1px at 70% 18%, rgba(255,255,255,0.9) 0%, transparent 100%),
+            radial-gradient(1.5px 1.5px at 85% 10%, rgba(255,255,255,0.7) 0%, transparent 100%),
+            radial-gradient(1px 1px at 92% 25%, rgba(255,255,255,0.8) 0%, transparent 100%),
+            radial-gradient(1px 1px at 15% 35%, rgba(255,255,255,0.5) 0%, transparent 100%),
+            radial-gradient(1px 1px at 30% 42%, rgba(255,255,255,0.6) 0%, transparent 100%),
+            radial-gradient(1px 1px at 60% 38%, rgba(255,255,255,0.7) 0%, transparent 100%),
+            radial-gradient(1px 1px at 78% 30%, rgba(255,255,255,0.5) 0%, transparent 100%),
+            radial-gradient(1px 1px at 5%  50%, rgba(255,255,255,0.4) 0%, transparent 100%),
+            radial-gradient(1px 1px at 48% 12%, rgba(255,255,255,0.8) 0%, transparent 100%),
+            radial-gradient(1px 1px at 95% 40%, rgba(255,255,255,0.6) 0%, transparent 100%);
+    }
+    @keyframes twinkle {
+        0%, 100% { opacity: 0.4; } 50% { opacity: 1; }
+    }
+    .stars-layer { animation: twinkle 4s ease-in-out infinite alternate; }
 
-      .auth-koin {
-        position: fixed; z-index: 0; pointer-events: none;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: 50%; font-weight: 800; font-family: 'Plus Jakarta Sans', sans-serif;
-      }
-      .auth-koin-btc {
-        width: 72px; height: 72px; left: 7%; top: 14%; font-size: 30px;
-        color: #2d1600;
-        background: radial-gradient(circle at 35% 30%, var(--c-secondary), var(--c-secondary-container) 70%);
-        box-shadow: 0 0 50px 10px rgba(255,184,116,0.30);
-        opacity: 0.85;
-        animation: auth-float-a 6.5s ease-in-out infinite;
-      }
-      .auth-koin-eth {
-        width: 54px; height: 54px; right: 9%; bottom: 18%; font-size: 22px;
-        color: #001f28;
-        background: radial-gradient(circle at 35% 30%, var(--c-tertiary), var(--c-tertiary-container) 70%);
-        box-shadow: 0 0 40px 8px rgba(76,214,255,0.28);
-        opacity: 0.75;
-        animation: auth-float-b 8s ease-in-out infinite;
-      }
-      @keyframes auth-float-a { 0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-18px) rotate(5deg);} }
-      @keyframes auth-float-b { 0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(16px) rotate(-5deg);} }
+    /* ── Skyline ── */
+    .skyline-layer {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        height: 180px; pointer-events: none; z-index: 1;
+        background-color: #060e22;
+        -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 180'%3E%3Cpolygon points='0,180 0,120 30,120 30,80 50,80 50,100 70,100 70,60 90,60 90,100 110,100 110,40 130,40 130,100 150,100 150,120 170,120 170,70 190,70 190,50 210,50 210,70 230,70 230,120 260,120 260,90 280,90 280,110 300,110 300,70 320,70 320,110 340,110 340,80 360,80 360,50 380,50 380,80 400,80 400,110 420,110 420,90 440,90 440,120 460,120 460,100 480,100 480,60 500,60 500,100 520,100 520,120 540,120 540,80 560,80 560,50 580,50 580,80 600,80 600,100 620,100 620,130 650,130 650,100 670,100 670,70 690,70 690,90 710,90 710,120 730,120 730,80 750,80 750,55 770,55 770,80 790,80 790,100 810,100 810,120 840,120 840,90 860,90 860,60 880,60 880,90 900,90 900,110 920,110 920,80 940,80 940,110 960,110 960,130 980,130 980,100 1000,100 1000,70 1020,70 1020,50 1040,50 1040,70 1060,70 1060,100 1080,100 1080,120 1100,120 1100,90 1120,90 1120,110 1140,110 1140,80 1160,80 1160,120 1180,120 1180,100 1200,100 1200,60 1220,60 1220,100 1240,100 1240,120 1260,120 1260,90 1280,90 1280,70 1300,70 1300,100 1320,100 1320,120 1350,120 1350,80 1370,80 1370,50 1390,50 1390,80 1410,80 1410,120 1440,120 1440,180' fill='%23060e22'/%3E%3C/svg%3E");
+        mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 180'%3E%3Cpolygon points='0,180 0,120 30,120 30,80 50,80 50,100 70,100 70,60 90,60 90,100 110,100 110,40 130,40 130,100 150,100 150,120 170,120 170,70 190,70 190,50 210,50 210,70 230,70 230,120 260,120 260,90 280,90 280,110 300,110 300,70 320,70 320,110 340,110 340,80 360,80 360,50 380,50 380,80 400,80 400,110 420,110 420,90 440,90 440,120 460,120 460,100 480,100 480,60 500,60 500,100 520,100 520,120 540,120 540,80 560,80 560,50 580,50 580,80 600,80 600,100 620,100 620,130 650,130 650,100 670,100 670,70 690,70 690,90 710,90 710,120 730,120 730,80 750,80 750,55 770,55 770,80 790,80 790,100 810,100 810,120 840,120 840,90 860,90 860,60 880,60 880,90 900,90 900,110 920,110 920,80 940,80 940,110 960,110 960,130 980,130 980,100 1000,100 1000,70 1020,70 1020,50 1040,50 1040,70 1060,70 1060,100 1080,100 1080,120 1100,120 1100,90 1120,90 1120,110 1140,110 1140,80 1160,80 1160,120 1180,120 1180,100 1200,100 1200,60 1220,60 1220,100 1240,100 1240,120 1260,120 1260,90 1280,90 1280,70 1300,70 1300,100 1320,100 1320,120 1350,120 1350,80 1370,80 1370,50 1390,50 1390,80 1410,80 1410,120 1440,120 1440,180' fill='%23060e22'/%3E%3C/svg%3E");
+        -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+    }
+    .skyline-lights {
+        position: fixed; bottom: 0; left: 0; right: 0; height: 180px;
+        pointer-events: none; z-index: 2;
+        background-image:
+            repeating-linear-gradient(
+                90deg,
+                transparent 0px, transparent 28px,
+                rgba(255,220,80,0.5) 28px, rgba(255,220,80,0.5) 30px,
+                transparent 30px, transparent 58px,
+                rgba(255,220,80,0.4) 58px, rgba(255,220,80,0.4) 60px
+            );
+        background-size: 120px 8px;
+        background-position: 0 60px;
+        mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 180'%3E%3Cpolygon points='0,180 0,120 30,120 30,80 50,80 50,100 70,100 70,60 90,60 90,100 110,100 110,40 130,40 130,100 150,100 150,120 170,120 170,70 190,70 190,50 210,50 210,70 230,70 230,120 260,120 260,90 280,90 280,110 300,110 300,70 320,70 320,110 340,110 340,80 360,80 360,50 380,50 380,80 400,80 400,110 420,110 420,90 440,90 440,120 460,120 460,100 480,100 480,60 500,60 500,100 520,100 520,120 540,120 540,80 560,80 560,50 580,50 580,80 600,80 600,100 620,100 620,130 650,130 650,100 670,100 670,70 690,70 690,90 710,90 710,120 730,120 730,80 750,80 750,55 770,55 770,80 790,80 790,100 810,100 810,120 840,120 840,90 860,90 860,60 880,60 880,90 900,90 900,110 920,110 920,80 940,80 940,110 960,110 960,130 980,130 980,100 1000,100 1000,70 1020,70 1020,50 1040,50 1040,70 1060,70 1060,100 1080,100 1080,120 1100,120 1100,90 1120,90 1120,110 1140,110 1140,80 1160,80 1160,120 1180,120 1180,100 1200,100 1200,60 1220,60 1220,100 1240,100 1240,120 1260,120 1260,90 1280,90 1280,70 1300,70 1300,100 1320,100 1320,120 1350,120 1350,80 1370,80 1370,50 1390,50 1390,80 1410,80 1410,120 1440,120 1440,180' fill='white'/%3E%3C/svg%3E");
+        -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+    }
 
-      .auth-brand { text-align: center; padding: 36px 0 6px; position: relative; z-index: 2; }
-      .auth-brand-badge {
-        width: 60px; height: 60px; margin: 0 auto 14px;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: 18px; transform: rotate(12deg);
-        font-size: 26px; color: var(--c-on-primary-container);
-        background: var(--c-primary-container);
-        box-shadow: 0 0 24px rgba(47,105,255,0.45);
-      }
-      .auth-brand-title {
-        font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800;
-        font-size: 24px; color: var(--c-on-surface); letter-spacing: -0.01em;
-      }
-      .auth-brand-sub {
-        font-family: 'Inter', sans-serif; font-size: 13px; color: var(--c-outline);
-        margin-top: 4px; opacity: 0.85;
-      }
+    /* ── Koin crypto ── */
+    @keyframes float-a { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-18px) rotate(5deg); } }
+    @keyframes float-b { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-12px) rotate(-4deg); } }
+    @keyframes float-c { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-22px) rotate(6deg); } }
+    .coin { position: fixed; pointer-events: none; z-index: 3; user-select: none; line-height: 1; }
+    .coin-btc-1 { font-size: 70px; top: 12%; left: 4%;  animation: float-a 5.5s ease-in-out infinite; filter: drop-shadow(0 0 16px rgba(247,147,26,0.7)); }
+    .coin-btc-2 { font-size: 38px; top: 55%; left: 1%;  animation: float-b 4.2s ease-in-out infinite; filter: drop-shadow(0 0 10px rgba(247,147,26,0.5)); }
+    .coin-btc-3 { font-size: 48px; top: 28%; right: 6%; animation: float-c 6.1s ease-in-out infinite; filter: drop-shadow(0 0 12px rgba(247,147,26,0.6)); }
+    .coin-eth-1 { font-size: 65px; top: 18%; right: 2%; animation: float-b 5.0s ease-in-out infinite; filter: drop-shadow(0 0 16px rgba(114,137,218,0.7)); }
+    .coin-eth-2 { font-size: 34px; top: 60%; right: 1%; animation: float-a 4.7s ease-in-out infinite; filter: drop-shadow(0 0 10px rgba(114,137,218,0.5)); }
+    .coin-eth-3 { font-size: 44px; top: 40%; left: 3%;  animation: float-c 5.8s ease-in-out infinite; filter: drop-shadow(0 0 12px rgba(114,137,218,0.6)); }
 
-      /* ===== Tab buttons (st.button biasa, di-style via CSS) ===== */
-      div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] button {
+    /* ── Candlestick chart ornamen ── */
+    .chart-ornament { position: fixed; top: 5%; pointer-events: none; z-index: 3; opacity: 0.6; }
+    .chart-left  { left: 2%; }
+    .chart-right { right: 2%; }
+
+    /* ── Tab wrapper trick ──────────────────────────────────────────────────
+       Kita bungkus tiap kolom button dalam div.tab-wrap-active / tab-wrap-inactive
+       lewat st.markdown SEBELUM st.button. CSS kita target:
+         .tab-wrap-active  + div button
+         .tab-wrap-inactive + div button
+       "Adjacent sibling" tidak works karena Streamlit tambah wrapper.
+       Trik yang WORKS: div kita dan div Streamlit ada dalam parent yang sama
+       (kolom), jadi kita pakai ~ (general sibling).
+    ────────────────────────────────────────────────────────────────────── */
+
+    /* Base style untuk semua tab button */
+    div[data-testid="column"] .stButton > button {
         width: 100% !important;
+        border-radius: 12px !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        padding: 14px 20px !important;
         border: none !important;
-        border-radius: 10px !important;
-        padding: 13px 0 !important;
-        height: auto !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        font-size: 17px !important;
-        font-weight: 700 !important;
         cursor: pointer !important;
-        transition: all .18s !important;
-        background: transparent !important;
-        color: #8d90a1 !important;
-        box-shadow: none !important;
-      }
-      /* Tab aktif — pakai class khusus yang kita inject lewat container key */
-      div[data-testid="stHorizontalBlock"] div[data-testid="stButton"]:first-child button.tab-masuk-aktif,
-      div.tab-masuk div[data-testid="stButton"] button {
-        background: #2f69ff !important;
-        color: #fffeff !important;
-        box-shadow: 0 6px 16px rgba(47,105,255,0.35) !important;
-      }
-      div.tab-daftar div[data-testid="stButton"]:last-child button {
-        background: #2f69ff !important;
-        color: #fffeff !important;
-        box-shadow: 0 6px 16px rgba(47,105,255,0.35) !important;
-      }
+        transition: all 0.2s ease !important;
+        letter-spacing: 0.3px !important;
+    }
 
-      /* ===== Kartu form: glass panel ===== */
-      .auth-card-wrap [data-testid="stVerticalBlockBorderWrapper"],
-      .auth-card-wrap [data-testid="stForm"] {
-        background: rgba(25,31,47,0.55) !important;
+    /* Tab NONAKTIF — abu gelap */
+    .tab-wrap-inactive ~ div .stButton > button,
+    .tab-wrap-inactive ~ div .stButton > button:hover {
+        background: rgba(255,255,255,0.06) !important;
+        color: rgba(200,210,240,0.6) !important;
+        box-shadow: none !important;
+    }
+
+    /* Tab AKTIF — biru gradient */
+    .tab-wrap-active ~ div .stButton > button,
+    .tab-wrap-active ~ div .stButton > button:hover {
+        background: linear-gradient(135deg, #1a6fe8 0%, #0d4fbf 100%) !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 20px rgba(26,111,232,0.45) !important;
+    }
+
+    /* ── Form card glassmorphism ── */
+    .form-card {
+        background: rgba(10, 22, 55, 0.75);
         backdrop-filter: blur(18px);
         -webkit-backdrop-filter: blur(18px);
-        border: 1px solid rgba(255,255,255,0.06) !important;
-        border-radius: 20px !important;
-        box-shadow: 0 0 36px 6px rgba(47,105,255,0.10), 0 20px 60px rgba(0,0,0,0.45);
-      }
-      .auth-card-wrap [data-testid="stForm"] label {
-        color: var(--c-outline) !important;
-        font-family: 'Geist', sans-serif !important;
-        font-weight: 600 !important;
-        font-size: 11.5px !important;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-      .auth-card-wrap [data-testid="stForm"] input {
-        background: var(--c-surface-lowest) !important;
-        border: 1px solid rgba(255,255,255,0.05) !important;
-        border-radius: 12px !important;
-        color: var(--c-on-surface) !important;
-        padding: 12px 14px !important;
-      }
-      .auth-card-wrap [data-testid="stForm"] input:focus {
-        border-color: var(--c-primary) !important;
-        box-shadow: 0 0 0 3px rgba(181,196,255,0.18) !important;
-      }
-      .auth-card-wrap [data-testid="stFormSubmitButton"] button,
-      .auth-card-wrap .stFormSubmitButton button {
-        background: var(--c-primary-container) !important;
-        color: var(--c-on-primary-container) !important;
-        border: none !important;
-        border-radius: 14px !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        font-weight: 700 !important;
+        border: 1px solid rgba(100,140,255,0.18);
+        border-radius: 20px;
+        padding: 36px 32px 28px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+        position: relative; z-index: 10;
+    }
+
+    /* ── Form input fields ── */
+    .form-card .stTextInput > div > div > input {
+        background: rgba(255,255,255,0.06) !important;
+        border: 1px solid rgba(100,140,255,0.25) !important;
+        border-radius: 10px !important;
+        color: #e8edf8 !important;
         font-size: 15px !important;
-        padding: 14px 0 !important;
-        height: auto !important;
-        box-shadow: 0 8px 22px rgba(47,105,255,0.28) !important;
-      }
+        padding: 12px 16px !important;
+    }
+    .form-card .stTextInput > div > div > input:focus {
+        border-color: rgba(100,160,255,0.6) !important;
+        box-shadow: 0 0 0 3px rgba(26,111,232,0.15) !important;
+    }
+    .form-card .stTextInput label {
+        color: #7eb3ff !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+    }
 
-      .auth-footer-note {
-        text-align: center; font-family: 'Inter', sans-serif; font-size: 12.5px;
-        color: var(--c-outline); margin-top: 14px;
-      }
-      .auth-footer-note b { color: var(--c-primary); }
+    /* ── Submit button (form) ── */
+    .form-card .stFormSubmitButton > button,
+    .form-card button[kind="formSubmit"] {
+        width: 100% !important;
+        background: linear-gradient(135deg, #1a6fe8 0%, #0d4fbf 100%) !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 12px !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        padding: 14px !important;
+        margin-top: 8px !important;
+        letter-spacing: 0.5px !important;
+        box-shadow: 0 4px 20px rgba(26,111,232,0.4) !important;
+        transition: all 0.2s ease !important;
+        cursor: pointer !important;
+    }
+    .form-card .stFormSubmitButton > button:hover,
+    .form-card button[kind="formSubmit"]:hover {
+        box-shadow: 0 6px 28px rgba(26,111,232,0.6) !important;
+        transform: translateY(-1px) !important;
+    }
 
-      .auth-bars {
-        display: flex; align-items: flex-end; justify-content: center; gap: 6px;
-        height: 56px; max-width: 240px; margin: 28px auto 0; opacity: 0.22;
-      }
-      .auth-bars div { width: 8px; border-radius: 3px 3px 0 0; background: var(--c-primary); }
+    /* ── Alert messages ── */
+    .stAlert { border-radius: 10px !important; }
     </style>
 
-    <div class="auth-koin auth-koin-btc">&#x20BF;</div>
-    <div class="auth-koin auth-koin-eth">&#x39E;</div>
+    <!-- Dekorasi fixed layer -->
+    <div class="stars-layer"></div>
+    <div class="skyline-layer"></div>
+    <div class="skyline-lights"></div>
 
-    <div class="auth-brand">
-      <div class="auth-brand-badge">&#x20BF;</div>
-      <div class="auth-brand-title">Masuk ke CryptoAI</div>
-      <div class="auth-brand-sub">Dashboard prediksi BTC &amp; ETH dengan LSTM</div>
-    </div>
+    <div class="coin coin-btc-1">₿</div>
+    <div class="coin coin-btc-2">₿</div>
+    <div class="coin coin-btc-3">₿</div>
+    <div class="coin coin-eth-1">Ξ</div>
+    <div class="coin coin-eth-2">Ξ</div>
+    <div class="coin coin-eth-3">Ξ</div>
+
+    <!-- Candlestick ornamen kiri -->
+    <svg class="chart-ornament chart-left" width="140" height="200" viewBox="0 0 140 200">
+        <line x1="20" y1="10" x2="20" y2="190" stroke="rgba(100,180,255,0.15)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="50" y1="10" x2="50" y2="190" stroke="rgba(100,180,255,0.1)"  stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="80" y1="10" x2="80" y2="190" stroke="rgba(100,180,255,0.15)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="110"y1="10" x2="110"y2="190" stroke="rgba(100,180,255,0.1)"  stroke-width="1" stroke-dasharray="4,4"/>
+        <!-- candles -->
+        <line x1="20" y1="30" x2="20" y2="80" stroke="#26c95b" stroke-width="1.5"/>
+        <rect x="14" y="40" width="12" height="30" fill="#26c95b" rx="1"/>
+        <line x1="50" y1="50" x2="50" y2="110" stroke="#ef4444" stroke-width="1.5"/>
+        <rect x="44" y="60" width="12" height="35" fill="#ef4444" rx="1"/>
+        <line x1="80" y1="25" x2="80" y2="90" stroke="#26c95b" stroke-width="1.5"/>
+        <rect x="74" y="35" width="12" height="40" fill="#26c95b" rx="1"/>
+        <line x1="110"y1="45" x2="110"y2="105" stroke="#26c95b" stroke-width="1.5"/>
+        <rect x="104"y1="55" width="12" height="30" fill="#26c95b" rx="1"/>
+        <!-- trend line -->
+        <polyline points="20,70 50,90 80,60 110,55" stroke="rgba(255,255,100,0.6)" stroke-width="1.5" fill="none" stroke-dasharray="5,3"/>
+    </svg>
+
+    <!-- Candlestick ornamen kanan -->
+    <svg class="chart-ornament chart-right" width="140" height="200" viewBox="0 0 140 200">
+        <line x1="20" y1="10" x2="20" y2="190" stroke="rgba(100,180,255,0.15)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="50" y1="10" x2="50" y2="190" stroke="rgba(100,180,255,0.1)"  stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="80" y1="10" x2="80" y2="190" stroke="rgba(100,180,255,0.15)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="110"y1="10" x2="110"y2="190" stroke="rgba(100,180,255,0.1)"  stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="20" y1="80" x2="20" y2="130" stroke="#ef4444" stroke-width="1.5"/>
+        <rect x="14" y="90" width="12" height="28" fill="#ef4444" rx="1"/>
+        <line x1="50" y1="55" x2="50" y2="100" stroke="#26c95b" stroke-width="1.5"/>
+        <rect x="44" y="62" width="12" height="28" fill="#26c95b" rx="1"/>
+        <line x1="80" y1="70" x2="80" y2="120" stroke="#ef4444" stroke-width="1.5"/>
+        <rect x="74" y="78" width="12" height="30" fill="#ef4444" rx="1"/>
+        <line x1="110"y1="40" x2="110"y2="90" stroke="#26c95b" stroke-width="1.5"/>
+        <rect x="104"y1="48" width="12" height="32" fill="#26c95b" rx="1"/>
+        <polyline points="20,110 50,80 80,98 110,62" stroke="rgba(255,255,100,0.6)" stroke-width="1.5" fill="none" stroke-dasharray="5,3"/>
+    </svg>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
-    col_kiri, col_tengah, col_kanan = st.columns([0.7, 1.4, 0.7])
-    with col_tengah:
-        current = st.session_state.get('auth_tab', 'Masuk')
+    # ── Layout utama ────────────────────────────────────────────────────────
+    _, center_col, _ = st.columns([0.7, 1.4, 0.7])
 
-        # ===== Tab: dua st.button biasa dalam 1 baris =====
-        # Inject class CSS untuk styling tab aktif
-        if current == 'Masuk':
-            st.markdown('<style>div[data-testid="stHorizontalBlock"] div[data-testid="stButton"]:nth-child(1) button{background:#2f69ff!important;color:#fffeff!important;box-shadow:0 6px 16px rgba(47,105,255,.35)!important;}</style>', unsafe_allow_html=True)
-        else:
-            st.markdown('<style>div[data-testid="stHorizontalBlock"] div[data-testid="stButton"]:nth-child(2) button{background:#2f69ff!important;color:#fffeff!important;box-shadow:0 6px 16px rgba(47,105,255,.35)!important;}</style>', unsafe_allow_html=True)
+    with center_col:
+        st.markdown("<div style='height:60px'></div>", unsafe_allow_html=True)
 
-        # Bungkus tab dalam container bergaya
-        st.markdown('<div style="background:rgba(181,196,255,0.06);border-radius:14px;padding:6px;margin-bottom:16px;">', unsafe_allow_html=True)
+        # ── Logo / judul ─────────────────────────────────────────────────
+        st.markdown("""
+        <div style="text-align:center; margin-bottom:28px; position:relative; z-index:10;">
+            <div style="font-size:48px; margin-bottom:8px;">₿</div>
+            <h1 style="
+                font-size:28px; font-weight:800; margin:0 0 6px;
+                background: linear-gradient(135deg, #7eb3ff, #ffffff);
+                -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                letter-spacing: -0.5px;
+            ">CryptoAI</h1>
+            <p style="color:rgba(150,180,240,0.7); font-size:14px; margin:0;">
+                Dashboard Prediksi BTC &amp; ETH
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # ── Tab selector ─────────────────────────────────────────────────
+        # TRICK RELIABLE:
+        # Sebelum render button Streamlit, inject div marker dengan class berbeda
+        # tergantung state aktif. CSS pakai general sibling selector (~) untuk
+        # menarget button yang muncul setelah marker ini dalam kolom yang sama.
+
         tab_col1, tab_col2 = st.columns(2)
-        with tab_col1:
-            if st.button("Masuk", key="btn_tab_masuk", use_container_width=True):
-                st.session_state['auth_tab'] = 'Masuk'
-                st.rerun()
-        with tab_col2:
-            if st.button("Daftar", key="btn_tab_daftar", use_container_width=True):
-                st.session_state['auth_tab'] = 'Daftar'
-                st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 
-        # ===== Form =====
-        if current == "Masuk":
-            with st.form("form_login"):
-                u = st.text_input("Email", key="login_user", placeholder="nama@email.com")
-                p = st.text_input("Password", type="password", key="login_pass", placeholder="••••••••")
-                submit = st.form_submit_button("Masuk", type="primary", use_container_width=True)
-            if submit:
-                ok, pesan = login(u, p)
-                if ok:
-                    st.success(pesan)
-                    st.rerun()
-                else:
-                    st.error(pesan)
+        with tab_col1:
+            is_masuk = st.session_state["auth_tab"] == "masuk"
             st.markdown(
-                "<div class='auth-footer-note'>Belum punya akun? Klik tab <b>Daftar</b> di atas.</div>",
+                f'<div class="{"tab-wrap-active" if is_masuk else "tab-wrap-inactive"}"></div>',
                 unsafe_allow_html=True
             )
+            if st.button("Masuk", key="tab_masuk", use_container_width=True):
+                st.session_state["auth_tab"] = "masuk"
+                st.rerun()
+
+        with tab_col2:
+            is_daftar = st.session_state["auth_tab"] == "daftar"
+            st.markdown(
+                f'<div class="{"tab-wrap-active" if is_daftar else "tab-wrap-inactive"}"></div>',
+                unsafe_allow_html=True
+            )
+            if st.button("Daftar", key="tab_daftar", use_container_width=True):
+                st.session_state["auth_tab"] = "daftar"
+                st.rerun()
+
+        st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+        # ── Form card ────────────────────────────────────────────────────
+        st.markdown('<div class="form-card">', unsafe_allow_html=True)
+
+        if st.session_state["auth_tab"] == "masuk":
+            _render_form_masuk()
         else:
-            with st.form("form_daftar"):
-                u  = st.text_input("Email", key="daftar_user", placeholder="nama@email.com")
-                p  = st.text_input("Password", type="password", key="daftar_pass", placeholder="Minimal 6 karakter")
-                p2 = st.text_input("Konfirmasi Password", type="password", key="daftar_pass2", placeholder="Ulangi password")
-                submit = st.form_submit_button("Buat Akun", type="primary", use_container_width=True)
-            if submit:
-                ok, pesan = daftar(u, p, p2)
-                if ok:
-                    st.success(pesan + " Silakan pindah ke tab Masuk.")
-                else:
-                    st.error(pesan)
+            _render_form_daftar()
 
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("<div style='height:200px'></div>", unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="auth-bars">
-      <div style="height:40%"></div><div style="height:65%"></div><div style="height:35%"></div>
-      <div style="height:85%"></div><div style="height:55%"></div><div style="height:95%"></div>
-      <div style="height:45%"></div><div style="height:70%"></div>
-    </div>
-    """, unsafe_allow_html=True)
+
+def _render_form_masuk():
+    with st.form("form_masuk", clear_on_submit=False):
+        st.text_input("Email", placeholder="nama@email.com", key="masuk_user")
+        st.text_input("Password", type="password", placeholder="••••••••", key="masuk_pass")
+        submitted = st.form_submit_button("Masuk", use_container_width=True)
+
+    if submitted:
+        username = st.session_state.get("masuk_user", "").strip()
+        password = st.session_state.get("masuk_pass", "")
+        if not username or not password:
+            st.error("Isi email dan password.")
+        elif login(username, password):
+            st.rerun()
+        else:
+            st.error("Email atau password salah.")
+
+
+def _render_form_daftar():
+    with st.form("form_daftar", clear_on_submit=False):
+        st.text_input("Email", placeholder="nama@email.com", key="daftar_user")
+        st.text_input("Password", type="password", placeholder="Minimal 6 karakter", key="daftar_pass")
+        st.text_input("Konfirmasi Password", type="password", placeholder="Ulangi password", key="daftar_pass2")
+        submitted = st.form_submit_button("Buat Akun", use_container_width=True)
+
+    if submitted:
+        username = st.session_state.get("daftar_user", "").strip()
+        password = st.session_state.get("daftar_pass", "")
+        konfirmasi = st.session_state.get("daftar_pass2", "")
+        if not username or not password:
+            st.error("Isi semua field.")
+        elif password != konfirmasi:
+            st.error("Password tidak cocok.")
+        else:
+            ok, pesan = daftar(username, password)
+            if ok:
+                st.success(pesan + " Silakan masuk.")
+                st.session_state["auth_tab"] = "masuk"
+                st.rerun()
+            else:
+                st.error(pesan)
