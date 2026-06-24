@@ -127,13 +127,33 @@ def tampilkan_form_auth():
         margin-top: 4px; opacity: 0.85;
       }
 
-      /* ===== st.radio: invisible tapi tetap bisa diklik JS ===== */
-      div[data-testid="stRadio"] > label { display: none !important; }
-      div[data-testid="stRadio"] > div {
-        position: absolute !important;
-        width: 1px !important; height: 1px !important;
-        overflow: hidden !important;
-        clip: rect(0,0,0,0) !important;
+      /* ===== Tab buttons (st.button biasa, di-style via CSS) ===== */
+      div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] button {
+        width: 100% !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 13px 0 !important;
+        height: auto !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-size: 17px !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+        transition: all .18s !important;
+        background: transparent !important;
+        color: #8d90a1 !important;
+        box-shadow: none !important;
+      }
+      /* Tab aktif — pakai class khusus yang kita inject lewat container key */
+      div[data-testid="stHorizontalBlock"] div[data-testid="stButton"]:first-child button.tab-masuk-aktif,
+      div.tab-masuk div[data-testid="stButton"] button {
+        background: #2f69ff !important;
+        color: #fffeff !important;
+        box-shadow: 0 6px 16px rgba(47,105,255,0.35) !important;
+      }
+      div.tab-daftar div[data-testid="stButton"]:last-child button {
+        background: #2f69ff !important;
+        color: #fffeff !important;
+        box-shadow: 0 6px 16px rgba(47,105,255,0.35) !important;
       }
 
       /* ===== Kartu form: glass panel ===== */
@@ -202,35 +222,33 @@ def tampilkan_form_auth():
     </div>
     """, unsafe_allow_html=True)
 
-    # st.radio di luar kolom — tidak overlap dengan HTML button
-    tab = st.radio(
-        "tab",
-        ["Masuk", "Daftar"],
-        index=0 if st.session_state['auth_tab'] == 'Masuk' else 1,
-        horizontal=True,
-        key="auth_radio"
-    )
-    st.session_state['auth_tab'] = tab
-
     st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
     col_kiri, col_tengah, col_kanan = st.columns([0.7, 1.4, 0.7])
     with col_tengah:
-        # Tab HTML visual — klik trigger radio asli
         current = st.session_state.get('auth_tab', 'Masuk')
-        s_aktif  = "background:#2f69ff;color:#fffeff;box-shadow:0 6px 16px rgba(47,105,255,0.35);"
-        s_nonaktif = "background:transparent;color:#8d90a1;"
-        st.markdown(f"""
-        <div style="display:flex;gap:6px;background:rgba(181,196,255,0.06);border-radius:14px;padding:6px;margin-bottom:16px;">
-          <button onclick="document.querySelectorAll('[data-testid=stRadio] input')[0].click()"
-            style="flex:1;border:none;border-radius:10px;padding:13px 0;font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:700;cursor:pointer;transition:all .18s;
-            {s_aktif if current == 'Masuk' else s_nonaktif}">Masuk</button>
-          <button onclick="document.querySelectorAll('[data-testid=stRadio] input')[1].click()"
-            style="flex:1;border:none;border-radius:10px;padding:13px 0;font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:700;cursor:pointer;transition:all .18s;
-            {s_nonaktif if current == 'Masuk' else s_aktif}">Daftar</button>
-        </div>
-        """, unsafe_allow_html=True)
 
-        if tab == "Masuk":
+        # ===== Tab: dua st.button biasa dalam 1 baris =====
+        # Pakai wrapper class stabil supaya CSS "aktif" tidak bergantung nth-child.
+        wrapper_class = "tab-masuk" if current == "Masuk" else "tab-daftar"
+        st.markdown(
+            f'<div class="{wrapper_class}" style="background:rgba(181,196,255,0.06);border-radius:14px;padding:6px;margin-bottom:16px;">',
+            unsafe_allow_html=True
+        )
+
+        tab_col1, tab_col2 = st.columns(2)
+        with tab_col1:
+            if st.button("Masuk", key="btn_tab_masuk", use_container_width=True):
+                st.session_state['auth_tab'] = 'Masuk'
+                st.rerun()
+        with tab_col2:
+            if st.button("Daftar", key="btn_tab_daftar", use_container_width=True):
+                st.session_state['auth_tab'] = 'Daftar'
+                st.rerun()
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # ===== Form =====
+        if current == "Masuk":
             with st.form("form_login"):
                 u = st.text_input("Email", key="login_user", placeholder="nama@email.com")
                 p = st.text_input("Password", type="password", key="login_pass", placeholder="••••••••")
