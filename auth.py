@@ -1,9 +1,5 @@
 """
 auth.py — Logika autentikasi: daftar, login, keluar, dan form UI-nya.
-
-Password TIDAK PERNAH disimpan dalam bentuk asli. Saat daftar, password
-diubah jadi hash satu arah dengan bcrypt. Saat login, password yang
-diketik diuji terhadap hash tersimpan — bukan dibandingkan langsung.
 """
 
 import bcrypt
@@ -24,22 +20,18 @@ def is_logged_in() -> bool:
 
 
 def login(username: str, password: str) -> tuple[bool, str]:
-    """Return (berhasil, pesan)."""
     user = db.get_user_by_username(username)
     if not user:
         return False, "Username belum terdaftar."
     if not cek_password(password, user['password_hash']):
         return False, "Password salah."
-
     st.session_state['user_id'] = user['id']
     st.session_state['username'] = user['username']
     return True, "Login berhasil."
 
 
 def daftar(username: str, password: str, konfirmasi: str) -> tuple[bool, str]:
-    """Return (berhasil, pesan)."""
     username = username.strip()
-
     if len(username) < 3:
         return False, "Username minimal 3 karakter."
     if len(password) < 6:
@@ -48,7 +40,6 @@ def daftar(username: str, password: str, konfirmasi: str) -> tuple[bool, str]:
         return False, "Konfirmasi password tidak cocok."
     if db.get_user_by_username(username):
         return False, "Username sudah dipakai, pilih yang lain."
-
     berhasil = db.create_user(username, hash_password(password))
     if not berhasil:
         return False, "Username sudah dipakai, pilih yang lain."
@@ -61,17 +52,6 @@ def logout():
 
 
 def tampilkan_form_auth():
-    """
-    Render halaman Login & Daftar bertema "Material 3 dark glass" —
-    palet token (primary/secondary=BTC/tertiary=ETH), kartu glassmorphism
-    dengan blur, badge brand melayang, dan tab bertanda ikon Material
-    Symbols asli (shorthand `:material/...:` Streamlit, BUKAN emoji).
-
-    Widget input tetap memakai st.form/st.text_input asli Streamlit agar
-    validasi & submit tetap jalan normal lewat login()/daftar().
-
-    Dipanggil HANYA ketika belum ada user yang login (is_logged_in() == False).
-    """
     st.markdown("""
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500&family=Geist:wght@500;600&display=swap');
@@ -80,9 +60,9 @@ def tampilkan_form_auth():
         --c-primary: #b5c4ff;
         --c-primary-container: #2f69ff;
         --c-on-primary-container: #fffeff;
-        --c-secondary: #ffb874;        /* BTC */
+        --c-secondary: #ffb874;
         --c-secondary-container: #e78603;
-        --c-tertiary: #4cd6ff;         /* ETH */
+        --c-tertiary: #4cd6ff;
         --c-tertiary-container: #00809d;
         --c-background: #0c1322;
         --c-surface-lowest: #070e1d;
@@ -103,7 +83,6 @@ def tampilkan_form_auth():
       }
       [data-testid="stDecoration"] { display: none !important; }
 
-      /* ===== Koin melayang dekoratif ===== */
       .auth-koin {
         position: fixed; z-index: 0; pointer-events: none;
         display: flex; align-items: center; justify-content: center;
@@ -128,7 +107,6 @@ def tampilkan_form_auth():
       @keyframes auth-float-a { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-18px) rotate(5deg); } }
       @keyframes auth-float-b { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(16px) rotate(-5deg); } }
 
-      /* ===== Brand header ===== */
       .auth-brand { text-align: center; padding: 36px 0 6px; position: relative; z-index: 2; }
       .auth-brand-badge {
         width: 60px; height: 60px; margin: 0 auto 14px;
@@ -147,7 +125,6 @@ def tampilkan_form_auth():
         margin-top: 4px; opacity: 0.85;
       }
 
-      /* ===== Kartu form: glass panel ===== */
       .auth-card-wrap [data-testid="stVerticalBlockBorderWrapper"],
       .auth-card-wrap [data-testid="stForm"] {
         background: rgba(25,31,47,0.55) !important;
@@ -177,53 +154,67 @@ def tampilkan_form_auth():
         box-shadow: 0 0 0 3px rgba(181,196,255,0.18) !important;
       }
 
-      /* ===== Tabs Masuk/Daftar dgn ikon Material Symbols asli ===== */
+      /* ===== TABS — fix ukuran besar ===== */
       .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-list"] {
-        background: rgba(181,196,255,0.06);
-        border-radius: 14px;
-        padding: 6px;
-        gap: 6px;
-        margin-bottom: 6px;
+        background: rgba(181,196,255,0.06) !important;
+        border-radius: 14px !important;
+        padding: 6px !important;
+        gap: 6px !important;
+        margin-bottom: 12px !important;
+        min-height: 62px !important;
       }
       .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] {
-        flex: 1;
-        justify-content: center;
-        background: transparent;
-        border-radius: 10px;
-        color: var(--c-outline);
-        font-family: 'Geist', sans-serif !important;
-        font-weight: 600 !important;
-        font-size: 14px !important;
-        padding: 13px 0 !important;
+        flex: 1 !important;
+        justify-content: center !important;
+        background: transparent !important;
+        border-radius: 10px !important;
+        color: var(--c-outline) !important;
+        font-weight: 700 !important;
+        font-size: 17px !important;
+        padding: 18px 0 !important;
         height: auto !important;
+        min-height: 50px !important;
       }
-      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] p {
-        font-size: 14px !important;
-        font-weight: 600 !important;
+      /* Paksa semua child element tab ikutin ukuran */
+      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] *,
+      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] p,
+      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] span,
+      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] div {
+        font-size: 17px !important;
+        font-weight: 700 !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
       }
       .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] {
         background: var(--c-primary-container) !important;
         color: var(--c-on-primary-container) !important;
-        box-shadow: 0 6px 16px rgba(47,105,255,0.35);
+        box-shadow: 0 6px 16px rgba(47,105,255,0.35) !important;
+      }
+      .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] *,
+      .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] p,
+      .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] span,
+      .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] div {
+        color: var(--c-on-primary-container) !important;
       }
       .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-highlight"],
       .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-border"] {
         display: none !important;
       }
 
-      /* ===== Tombol submit ===== */
-      .auth-card-wrap [data-testid="stFormSubmitButton"] button {
+      .auth-card-wrap [data-testid="stFormSubmitButton"] button,
+      .auth-card-wrap .stFormSubmitButton button {
         background: var(--c-primary-container) !important;
         color: var(--c-on-primary-container) !important;
         border: none !important;
         border-radius: 14px !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
         font-weight: 700 !important;
-        padding: 12px 0 !important;
+        font-size: 15px !important;
+        padding: 14px 0 !important;
+        height: auto !important;
         box-shadow: 0 8px 22px rgba(47,105,255,0.28) !important;
       }
       .auth-card-wrap [data-testid="stFormSubmitButton"] button:hover {
-        opacity: 0.92;
+        opacity: 0.92 !important;
       }
 
       .auth-footer-note {
@@ -232,7 +223,6 @@ def tampilkan_form_auth():
       }
       .auth-footer-note b { color: var(--c-primary); }
 
-      /* ===== Dekorasi bar-chart bawah ===== */
       .auth-bars {
         display: flex; align-items: flex-end; justify-content: center; gap: 6px;
         height: 56px; max-width: 240px; margin: 28px auto 0; opacity: 0.22;
@@ -240,11 +230,11 @@ def tampilkan_form_auth():
       .auth-bars div { width: 8px; border-radius: 3px 3px 0 0; background: var(--c-primary); }
     </style>
 
-    <div class="auth-koin auth-koin-btc">₿</div>
-    <div class="auth-koin auth-koin-eth">Ξ</div>
+    <div class="auth-koin auth-koin-btc">&#x20BF;</div>
+    <div class="auth-koin auth-koin-eth">&#x39E;</div>
 
     <div class="auth-brand">
-      <div class="auth-brand-badge">₿</div>
+      <div class="auth-brand-badge">&#x20BF;</div>
       <div class="auth-brand-title">Masuk ke CryptoAI</div>
       <div class="auth-brand-sub">Dashboard prediksi BTC &amp; ETH dengan LSTM</div>
     </div>
@@ -253,7 +243,8 @@ def tampilkan_form_auth():
     st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
     col_kiri, col_tengah, col_kanan = st.columns([0.7, 1.4, 0.7])
     with col_tengah:
-        tab_login, tab_daftar = st.tabs([":material/login: Masuk", ":material/person_add: Daftar"])
+        # Tanpa ikon :material/...: di label tab — ikon bikin teks render kecil
+        tab_login, tab_daftar = st.tabs(["Masuk", "Daftar"])
 
         with tab_login:
             with st.form("form_login"):
