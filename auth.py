@@ -53,7 +53,7 @@ def logout():
 
 def tampilkan_form_auth():
     if 'auth_tab' not in st.session_state:
-        st.session_state['auth_tab'] = 'login'
+        st.session_state['auth_tab'] = 'Masuk'
 
     st.markdown("""
     <style>
@@ -127,53 +127,43 @@ def tampilkan_form_auth():
         margin-top: 4px; opacity: 0.85;
       }
 
-      /* ===== Custom tab bar ===== */
-      .auth-tabbar {
-        display: flex;
-        gap: 6px;
-        background: rgba(181,196,255,0.06);
-        border-radius: 14px;
-        padding: 6px;
-        margin-bottom: 16px;
-        position: relative;
+      /* ===== st.radio dijadikan tab bar ===== */
+      div[data-testid="stRadio"] > label { display: none !important; }
+      div[data-testid="stRadio"] > div {
+        display: flex !important;
+        gap: 6px !important;
+        background: rgba(181,196,255,0.06) !important;
+        border-radius: 14px !important;
+        padding: 6px !important;
+        margin-bottom: 16px !important;
+        flex-direction: row !important;
       }
-      .auth-tab-btn {
-        flex: 1;
-        text-align: center;
-        border-radius: 10px;
-        padding: 14px 0;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--c-outline);
-        pointer-events: none;
-      }
-      .auth-tab-btn.active {
-        background: var(--c-primary-container);
-        color: var(--c-on-primary-container);
-        box-shadow: 0 6px 16px rgba(47,105,255,0.35);
-      }
-
-      /* ===== Invisible button overlay untuk tab ===== */
-      .tab-btn-wrap {
-        display: flex;
-        gap: 6px;
-        margin-top: -62px;      /* naik ke atas tab bar HTML */
-        margin-bottom: 10px;
-        position: relative;
-        z-index: 10;
-      }
-      .tab-btn-wrap .stButton button {
-        opacity: 0 !important;
-        height: 52px !important;
-        width: 100% !important;
+      div[data-testid="stRadio"] > div > label {
+        display: flex !important;
+        flex: 1 !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 10px !important;
+        padding: 13px 0 !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-size: 17px !important;
+        font-weight: 700 !important;
+        color: var(--c-outline) !important;
         cursor: pointer !important;
-        border: none !important;
-        background: transparent !important;
-        box-shadow: none !important;
+        transition: all 0.18s ease !important;
+        margin: 0 !important;
       }
-      .tab-btn-wrap [data-testid="column"] {
-        padding: 0 !important;
+      div[data-testid="stRadio"] > div > label:has(input:checked) {
+        background: var(--c-primary-container) !important;
+        color: var(--c-on-primary-container) !important;
+        box-shadow: 0 6px 16px rgba(47,105,255,0.35) !important;
+      }
+      /* sembunyikan radio circle asli */
+      div[data-testid="stRadio"] > div > label > div:first-child { display: none !important; }
+      div[data-testid="stRadio"] > div > label > div:last-child {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-size: 17px !important;
+        font-weight: 700 !important;
       }
 
       /* ===== Kartu form: glass panel ===== */
@@ -205,7 +195,6 @@ def tampilkan_form_auth():
         border-color: var(--c-primary) !important;
         box-shadow: 0 0 0 3px rgba(181,196,255,0.18) !important;
       }
-
       .auth-card-wrap [data-testid="stFormSubmitButton"] button,
       .auth-card-wrap .stFormSubmitButton button {
         background: var(--c-primary-container) !important;
@@ -246,32 +235,17 @@ def tampilkan_form_auth():
     st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
     col_kiri, col_tengah, col_kanan = st.columns([0.7, 1.4, 0.7])
     with col_tengah:
-        aktif = st.session_state['auth_tab']
-        cls_login  = "auth-tab-btn active" if aktif == 'login'  else "auth-tab-btn"
-        cls_daftar = "auth-tab-btn active" if aktif == 'daftar' else "auth-tab-btn"
+        # st.radio sebagai tab — native Streamlit, pasti bisa diklik
+        tab = st.radio(
+            "tab",
+            ["Masuk", "Daftar"],
+            index=0 if st.session_state['auth_tab'] == 'Masuk' else 1,
+            horizontal=True,
+            key="auth_radio"
+        )
+        st.session_state['auth_tab'] = tab
 
-        # HTML tab bar (visual only, pointer-events: none)
-        st.markdown(f"""
-        <div class="auth-tabbar">
-          <div class="{cls_login}">Masuk</div>
-          <div class="{cls_daftar}">Daftar</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Invisible button overlay — ini yang handle klik
-        st.markdown('<div class="tab-btn-wrap">', unsafe_allow_html=True)
-        col_t1, col_t2 = st.columns(2)
-        with col_t1:
-            if st.button("Masuk", key="tab_btn_login", use_container_width=True):
-                st.session_state['auth_tab'] = 'login'
-                st.rerun()
-        with col_t2:
-            if st.button("Daftar", key="tab_btn_daftar", use_container_width=True):
-                st.session_state['auth_tab'] = 'daftar'
-                st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        if st.session_state['auth_tab'] == 'login':
+        if tab == "Masuk":
             with st.form("form_login"):
                 u = st.text_input("Email", key="login_user", placeholder="nama@email.com")
                 p = st.text_input("Password", type="password", key="login_pass", placeholder="••••••••")
