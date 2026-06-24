@@ -127,13 +127,13 @@ def tampilkan_form_auth():
         margin-top: 4px; opacity: 0.85;
       }
 
-      /* ===== Sembunyikan st.radio sepenuhnya, tapi tetap fungsional ===== */
-      div[data-testid="stRadio"] {
+      /* ===== st.radio: invisible tapi tetap bisa diklik JS ===== */
+      div[data-testid="stRadio"] > label { display: none !important; }
+      div[data-testid="stRadio"] > div {
         position: absolute !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-        height: 0 !important;
+        width: 1px !important; height: 1px !important;
         overflow: hidden !important;
+        clip: rect(0,0,0,0) !important;
       }
 
       /* ===== Kartu form: glass panel ===== */
@@ -202,12 +202,22 @@ def tampilkan_form_auth():
     </div>
     """, unsafe_allow_html=True)
 
+    # st.radio di luar kolom — tidak overlap dengan HTML button
+    tab = st.radio(
+        "tab",
+        ["Masuk", "Daftar"],
+        index=0 if st.session_state['auth_tab'] == 'Masuk' else 1,
+        horizontal=True,
+        key="auth_radio"
+    )
+    st.session_state['auth_tab'] = tab
+
     st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
     col_kiri, col_tengah, col_kanan = st.columns([0.7, 1.4, 0.7])
     with col_tengah:
-        # Tab HTML visual — klik trigger radio asli di belakang layar
+        # Tab HTML visual — klik trigger radio asli
         current = st.session_state.get('auth_tab', 'Masuk')
-        s_aktif = "background:#2f69ff;color:#fffeff;box-shadow:0 6px 16px rgba(47,105,255,0.35);"
+        s_aktif  = "background:#2f69ff;color:#fffeff;box-shadow:0 6px 16px rgba(47,105,255,0.35);"
         s_nonaktif = "background:transparent;color:#8d90a1;"
         st.markdown(f"""
         <div style="display:flex;gap:6px;background:rgba(181,196,255,0.06);border-radius:14px;padding:6px;margin-bottom:16px;">
@@ -219,16 +229,6 @@ def tampilkan_form_auth():
             {s_nonaktif if current == 'Masuk' else s_aktif}">Daftar</button>
         </div>
         """, unsafe_allow_html=True)
-
-        # st.radio disembunyikan via CSS, tetap dipakai untuk state
-        tab = st.radio(
-            "tab",
-            ["Masuk", "Daftar"],
-            index=0 if current == 'Masuk' else 1,
-            horizontal=True,
-            key="auth_radio"
-        )
-        st.session_state['auth_tab'] = tab
 
         if tab == "Masuk":
             with st.form("form_login"):
