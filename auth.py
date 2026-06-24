@@ -52,6 +52,10 @@ def logout():
 
 
 def tampilkan_form_auth():
+    # Track tab aktif via session_state
+    if 'auth_tab' not in st.session_state:
+        st.session_state['auth_tab'] = 'login'
+
     st.markdown("""
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500&family=Geist:wght@500;600&display=swap');
@@ -64,7 +68,6 @@ def tampilkan_form_auth():
         --c-secondary-container: #e78603;
         --c-tertiary: #4cd6ff;
         --c-tertiary-container: #00809d;
-        --c-background: #0c1322;
         --c-surface-lowest: #070e1d;
         --c-on-surface: #dce2f8;
         --c-outline: #8d90a1;
@@ -104,8 +107,8 @@ def tampilkan_form_auth():
         opacity: 0.75;
         animation: auth-float-b 8s ease-in-out infinite;
       }
-      @keyframes auth-float-a { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-18px) rotate(5deg); } }
-      @keyframes auth-float-b { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(16px) rotate(-5deg); } }
+      @keyframes auth-float-a { 0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-18px) rotate(5deg);} }
+      @keyframes auth-float-b { 0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(16px) rotate(-5deg);} }
 
       .auth-brand { text-align: center; padding: 36px 0 6px; position: relative; z-index: 2; }
       .auth-brand-badge {
@@ -125,6 +128,36 @@ def tampilkan_form_auth():
         margin-top: 4px; opacity: 0.85;
       }
 
+      /* ===== Custom tab bar (HTML murni, bukan st.tabs) ===== */
+      .auth-tabbar {
+        display: flex;
+        gap: 6px;
+        background: rgba(181,196,255,0.06);
+        border-radius: 14px;
+        padding: 6px;
+        margin-bottom: 16px;
+      }
+      .auth-tab-btn {
+        flex: 1;
+        text-align: center;
+        border-radius: 10px;
+        padding: 14px 0;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--c-outline);
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        transition: all 0.18s ease;
+      }
+      .auth-tab-btn.active {
+        background: var(--c-primary-container);
+        color: var(--c-on-primary-container);
+        box-shadow: 0 6px 16px rgba(47,105,255,0.35);
+      }
+
+      /* ===== Kartu form: glass panel ===== */
       .auth-card-wrap [data-testid="stVerticalBlockBorderWrapper"],
       .auth-card-wrap [data-testid="stForm"] {
         background: rgba(25,31,47,0.55) !important;
@@ -154,49 +187,6 @@ def tampilkan_form_auth():
         box-shadow: 0 0 0 3px rgba(181,196,255,0.18) !important;
       }
 
-      /* ===== TABS: selector button[role="tab"] lebih spesifik dari data-baseweb ===== */
-      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-list"] {
-        background: rgba(181,196,255,0.06) !important;
-        border-radius: 14px !important;
-        padding: 6px !important;
-        gap: 6px !important;
-        margin-bottom: 12px !important;
-      }
-      .auth-card-wrap [data-testid="stTabs"] button[role="tab"] {
-        flex: 1 !important;
-        background: transparent !important;
-        border: none !important;
-        border-radius: 10px !important;
-        color: var(--c-outline) !important;
-        font-size: 18px !important;
-        font-weight: 700 !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        padding: 16px 32px !important;
-        height: auto !important;
-        min-height: 54px !important;
-        line-height: 1.2 !important;
-        cursor: pointer !important;
-      }
-      .auth-card-wrap [data-testid="stTabs"] button[role="tab"] * {
-        font-size: 18px !important;
-        font-weight: 700 !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        color: inherit !important;
-      }
-      .auth-card-wrap [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-        background: var(--c-primary-container) !important;
-        color: var(--c-on-primary-container) !important;
-        box-shadow: 0 6px 16px rgba(47,105,255,0.35) !important;
-      }
-      .auth-card-wrap [data-testid="stTabs"] button[role="tab"][aria-selected="true"] * {
-        color: var(--c-on-primary-container) !important;
-      }
-      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-highlight"],
-      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-border"] {
-        display: none !important;
-      }
-
-      /* ===== Tombol submit ===== */
       .auth-card-wrap [data-testid="stFormSubmitButton"] button,
       .auth-card-wrap .stFormSubmitButton button {
         background: var(--c-primary-container) !important;
@@ -210,13 +200,10 @@ def tampilkan_form_auth():
         height: auto !important;
         box-shadow: 0 8px 22px rgba(47,105,255,0.28) !important;
       }
-      .auth-card-wrap [data-testid="stFormSubmitButton"] button:hover {
-        opacity: 0.92 !important;
-      }
 
       .auth-footer-note {
         text-align: center; font-family: 'Inter', sans-serif; font-size: 12.5px;
-        color: var(--c-outline); margin-top: 14px; position: relative; z-index: 2;
+        color: var(--c-outline); margin-top: 14px;
       }
       .auth-footer-note b { color: var(--c-primary); }
 
@@ -240,13 +227,30 @@ def tampilkan_form_auth():
     st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
     col_kiri, col_tengah, col_kanan = st.columns([0.7, 1.4, 0.7])
     with col_tengah:
-        tab_login, tab_daftar = st.tabs(["Masuk", "Daftar"])
+        # Custom tab bar — HTML murni, tidak pakai st.tabs()
+        aktif = st.session_state['auth_tab']
+        cls_login  = "auth-tab-btn active" if aktif == 'login'  else "auth-tab-btn"
+        cls_daftar = "auth-tab-btn active" if aktif == 'daftar' else "auth-tab-btn"
 
-        with tab_login:
+        st.markdown(f"""
+        <div class="auth-tabbar">
+          <div class="{cls_login}"  onclick="window.location.href='?tab=login'">Masuk</div>
+          <div class="{cls_daftar}" onclick="window.location.href='?tab=daftar'">Daftar</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Baca query param untuk switch tab
+        params = st.query_params
+        if 'tab' in params:
+            st.session_state['auth_tab'] = params['tab']
+            st.query_params.clear()
+            st.rerun()
+
+        if st.session_state['auth_tab'] == 'login':
             with st.form("form_login"):
                 u = st.text_input("Email", key="login_user", placeholder="nama@email.com")
                 p = st.text_input("Password", type="password", key="login_pass", placeholder="••••••••")
-                submit = st.form_submit_button(":material/login: Masuk", type="primary", use_container_width=True)
+                submit = st.form_submit_button("Masuk", type="primary", use_container_width=True)
             if submit:
                 ok, pesan = login(u, p)
                 if ok:
@@ -255,22 +259,22 @@ def tampilkan_form_auth():
                 else:
                     st.error(pesan)
             st.markdown(
-                "<div class='auth-footer-note'>Belum punya akun? Buka tab <b>Daftar</b> di atas.</div>",
+                "<div class='auth-footer-note'>Belum punya akun? Klik tab <b>Daftar</b> di atas.</div>",
                 unsafe_allow_html=True
             )
-
-        with tab_daftar:
+        else:
             with st.form("form_daftar"):
-                u = st.text_input("Email", key="daftar_user", placeholder="nama@email.com")
-                p = st.text_input("Password", type="password", key="daftar_pass", placeholder="Minimal 6 karakter")
+                u  = st.text_input("Email", key="daftar_user", placeholder="nama@email.com")
+                p  = st.text_input("Password", type="password", key="daftar_pass", placeholder="Minimal 6 karakter")
                 p2 = st.text_input("Konfirmasi Password", type="password", key="daftar_pass2", placeholder="Ulangi password")
-                submit = st.form_submit_button(":material/person_add: Buat Akun", type="primary", use_container_width=True)
+                submit = st.form_submit_button("Buat Akun", type="primary", use_container_width=True)
             if submit:
                 ok, pesan = daftar(u, p, p2)
                 if ok:
                     st.success(pesan + " Silakan pindah ke tab Masuk.")
                 else:
                     st.error(pesan)
+
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
