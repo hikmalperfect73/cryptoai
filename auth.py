@@ -209,6 +209,39 @@ def tampilkan_form_auth():
         text-transform: uppercase;
         letter-spacing: 0.03em;
       }
+
+      /* ===== Tab Masuk/Daftar: dibesarkan, tanpa ikon emoji ===== */
+      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-list"] {
+        background: rgba(59,130,246,0.08);
+        border-radius: 14px;
+        padding: 6px;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] {
+        flex: 1;
+        justify-content: center;
+        background: transparent;
+        border-radius: 11px;
+        color: rgba(186,210,240,0.65);
+        font-weight: 700 !important;
+        font-size: 16px !important;
+        padding: 14px 0 !important;
+        height: auto !important;
+      }
+      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab"] p {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+      }
+      .auth-card-wrap [data-testid="stTabs"] [aria-selected="true"] {
+        background: linear-gradient(135deg, #1d4ed8, #0ea5e9) !important;
+        color: white !important;
+        box-shadow: 0 6px 18px rgba(29,78,216,0.4);
+      }
+      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-highlight"],
+      .auth-card-wrap [data-testid="stTabs"] [data-baseweb="tab-border"] {
+        display: none !important;
+      }
     </style>
 
     <div class="auth-stars"></div>
@@ -292,7 +325,7 @@ def tampilkan_form_auth():
     st.markdown('<div class="auth-card-wrap">', unsafe_allow_html=True)
     col_kiri, col_tengah, col_kanan = st.columns([0.7, 1.4, 0.7])
     with col_tengah:
-        tab_login, tab_daftar = st.tabs(["🔑 Masuk", "📝 Daftar"])
+        tab_login, tab_daftar = st.tabs(["Masuk", "Daftar"])
 
         with tab_login:
             with st.form("form_login"):
