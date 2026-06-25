@@ -37,7 +37,7 @@ def is_logged_in():
     return "user_id" in st.session_state
 
 
-def _generate_skyline_svg(width: int = 1600, height: int = 160, seed: int = 42) -> str:
+def _generate_skyline_svg(width: int = 1600, height: int = 110, seed: int = 42) -> str:
     """SVG skyline deterministik (server-side, tanpa JS, tanpa mask-image)."""
     state = {"s": seed}
 
@@ -149,7 +149,7 @@ def tampilkan_form_auth():
     @keyframes twinkle-2 {{ 0% {{ opacity: .35; }} 50% {{ opacity: .9; }} 100% {{ opacity: .4; }} }}
 
     .skyline-wrap {{
-        position: fixed; bottom: 0; left: 0; width: 100%; height: 160px;
+        position: fixed; bottom: 0; left: 0; width: 100%; height: 110px;
         z-index: 1; pointer-events: none;
         animation: city-flicker 5s ease-in-out infinite;
     }}
@@ -246,14 +246,16 @@ def tampilkan_form_auth():
 
     /* ---- glass card (container key beneran nge-nest semua widget) ---- */
     .st-key-auth_card {{
-        background: rgba(10, 25, 60, 0.72) !important;
+        background: rgba(8, 18, 42, 0.92) !important;
         backdrop-filter: blur(18px);
         -webkit-backdrop-filter: blur(18px);
         border: 1px solid rgba(100,160,255,.18);
         border-radius: 18px;
         padding: 2rem 2.2rem;
         box-shadow: 0 8px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.07);
-        margin-bottom: 2rem;
+        margin-bottom: 3rem;
+        position: relative;
+        z-index: 20;
         animation: fade-in-up .6s ease-out .15s both;
     }}
     .st-key-auth_card label {{ color: #ccdeff !important; font-weight: 600 !important; }}
