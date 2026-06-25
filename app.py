@@ -12,6 +12,34 @@ from sklearn.metrics import mean_absolute_error, r2_score
 import db
 import auth
 
+
+def _sparkline_svg(values, color="#38bdf8", width=92, height=30, fill=True):
+    """Sparkline mini deterministik dari data harga asli (bukan dekorasi acak)."""
+    vals = list(values)
+    if len(vals) < 2:
+        return ""
+    vmin, vmax = min(vals), max(vals)
+    rng = (vmax - vmin) or 1
+    pad = 3
+    step = (width - 2 * pad) / (len(vals) - 1)
+    pts = []
+    for i, v in enumerate(vals):
+        x = pad + i * step
+        y = pad + (height - 2 * pad) * (1 - (v - vmin) / rng)
+        pts.append((round(x, 1), round(y, 1)))
+    path = " ".join(f"{x},{y}" for x, y in pts)
+    fill_html = ""
+    if fill:
+        fill_pts = f"{pts[0][0]},{height} " + path + f" {pts[-1][0]},{height}"
+        fill_html = f'<polyline points="{fill_pts}" fill="{color}22" stroke="none"/>'
+    return (
+        f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" '
+        f'style="display:block">{fill_html}'
+        f'<polyline points="{path}" fill="none" stroke="{color}" '
+        f'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+        f'<circle cx="{pts[-1][0]}" cy="{pts[-1][1]}" r="3" fill="{color}"/></svg>'
+    )
+
 # ===== CONFIG =====
 st.set_page_config(
     page_title="CryptoAI — Prediksi BTC & ETH",
@@ -22,13 +50,15 @@ st.set_page_config(
 # ===== STYLE BIRU =====
 st.markdown("""
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
   html, body, [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #020b18 0%, #041428 50%, #020d1f 100%);
     font-family: 'Plus Jakarta Sans', sans-serif;
   }
   .stApp { background: transparent; }
+
+  .mono-num { font-family: 'JetBrains Mono', monospace; }
 
   [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #020e1f 0%, #031524 100%) !important;
@@ -53,6 +83,7 @@ st.markdown("""
 
   /* ===== FIX: angka metric kepotong "$60...." di layar sempit ===== */
   [data-testid="stMetricValue"] {
+    font-family: 'JetBrains Mono', monospace !important;
     font-size: clamp(1rem, 2.4vw, 1.8rem) !important;
     white-space: normal !important;
     overflow: visible !important;
@@ -180,6 +211,71 @@ st.markdown("""
   }
   .pred-card:hover {
     transform: translateX(3px);
+  }
+
+  /* ===== Custom metric card (icon badge + sparkline) ===== */
+  .mcard {
+    background: rgba(59,130,246,0.07);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 16px;
+    padding: 16px 18px;
+    height: 100%;
+    transition: all .2s ease;
+    animation: card-fade-in .5s ease-out both;
+  }
+  .mcard:hover {
+    border-color: rgba(59,130,246,0.5);
+    background: rgba(59,130,246,0.12);
+    transform: translateY(-2px);
+  }
+  .mcard-top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .mcard-icon {
+    width:32px; height:32px; border-radius:9px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px; flex-shrink:0;
+  }
+  .mcard-label {
+    font-size:12px; color:#7ba8d6; font-weight:600;
+    margin-top:10px; letter-spacing:.02em;
+  }
+  .mcard-value {
+    font-family:'JetBrains Mono', monospace;
+    font-size:clamp(1.05rem, 2.1vw, 1.55rem);
+    font-weight:700; color:#e0f2fe; margin-top:2px;
+    line-height:1.2; word-break:keep-all;
+  }
+  .mcard-delta {
+    font-size:11.5px; font-weight:700; padding:2px 8px;
+    border-radius:999px; white-space:nowrap;
+  }
+
+  /* ===== Signature: range bar posisi harga ===== */
+  .range-wrap { margin: 4px 0 22px; }
+  .range-label-row {
+    display:flex; justify-content:space-between;
+    font-size:11px; color:#475569; margin-bottom:6px;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .range-track {
+    position:relative; height:8px; border-radius:999px;
+    background:linear-gradient(90deg, #f43f5e22, #fbbf2422, #10b98122);
+    overflow:visible;
+  }
+  .range-fill {
+    position:absolute; top:0; left:0; height:100%; border-radius:999px;
+    background:linear-gradient(90deg, #f43f5e, #fbbf24, #10b981);
+    transition: width 1s ease;
+  }
+  .range-marker {
+    position:absolute; top:50%; width:14px; height:14px;
+    border-radius:50%; background:#e0f2fe; border:3px solid #2563eb;
+    transform:translate(-50%,-50%);
+    box-shadow:0 0 0 4px rgba(37,99,235,0.25);
+    animation: marker-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes marker-pulse {
+    0%, 100% { box-shadow:0 0 0 4px rgba(37,99,235,0.25); }
+    50%      { box-shadow:0 0 0 8px rgba(37,99,235,0.12); }
   }
 </style>
 """, unsafe_allow_html=True)
@@ -532,13 +628,80 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ===== METRICS =====
+# ===== SIGNATURE: RANGE BAR POSISI HARGA (90 hari) =====
+high90 = float(df['High'].tail(90).max())
+low90  = float(df['Low'].tail(90).min())
+pos_pct = ((harga_terakhir - low90) / (high90 - low90) * 100) if high90 > low90 else 50
+pos_pct = max(2, min(98, pos_pct))
+
+st.markdown(f"""
+<div class='range-wrap'>
+  <div class='range-label-row'>
+    <span>TERENDAH 90H · ${low90:,.0f}</span>
+    <span>POSISI HARGA SAAT INI</span>
+    <span>TERTINGGI 90H · ${high90:,.0f}</span>
+  </div>
+  <div class='range-track'>
+    <div class='range-fill' style='width:{pos_pct:.1f}%'></div>
+    <div class='range-marker' style='left:{pos_pct:.1f}%'></div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ===== METRICS (custom card + sparkline asli dari data) =====
+spark_harga = _sparkline_svg(df['Close'].tail(14).tolist(), color="#38bdf8")
+spark_pred  = _sparkline_svg([harga_terakhir] + list(pred), color="#10b981")
+
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("💰 Harga Terakhir",  f"${harga_terakhir:,.0f}", f"{perubahan:+.2f}%")
-c2.metric("🔮 Prediksi Besok",  f"${pred[0]:,.0f}",
-          f"{((pred[0]-harga_terakhir)/harga_terakhir*100):+.2f}%")
-c3.metric("📈 Harga Tertinggi", f"${df['High'].max():,.0f}")
-c4.metric("📉 Harga Terendah",  f"${df['Low'].min():,.0f}")
+with c1:
+    st.markdown(f"""
+    <div class='mcard'>
+      <div class='mcard-top'>
+        <div class='mcard-icon' style='background:rgba(56,189,248,.15)'>💰</div>
+        <span class='mcard-delta' style='color:{"#10b981" if perubahan>=0 else "#f43f5e"};
+          background:{"rgba(16,185,129,.12)" if perubahan>=0 else "rgba(244,63,94,.12)"}'>
+          {"▲" if perubahan>=0 else "▼"} {perubahan:+.2f}%</span>
+      </div>
+      <div class='mcard-label'>Harga Terakhir</div>
+      <div class='mcard-value'>${harga_terakhir:,.0f}</div>
+      {spark_harga}
+    </div>
+    """, unsafe_allow_html=True)
+with c2:
+    chg_besok = (pred[0]-harga_terakhir)/harga_terakhir*100
+    st.markdown(f"""
+    <div class='mcard'>
+      <div class='mcard-top'>
+        <div class='mcard-icon' style='background:rgba(16,185,129,.15)'>🔮</div>
+        <span class='mcard-delta' style='color:{"#10b981" if chg_besok>=0 else "#f43f5e"};
+          background:{"rgba(16,185,129,.12)" if chg_besok>=0 else "rgba(244,63,94,.12)"}'>
+          {"▲" if chg_besok>=0 else "▼"} {chg_besok:+.2f}%</span>
+      </div>
+      <div class='mcard-label'>Prediksi Besok</div>
+      <div class='mcard-value'>${pred[0]:,.0f}</div>
+      {spark_pred}
+    </div>
+    """, unsafe_allow_html=True)
+with c3:
+    st.markdown(f"""
+    <div class='mcard'>
+      <div class='mcard-top'>
+        <div class='mcard-icon' style='background:rgba(52,211,153,.15)'>📈</div>
+      </div>
+      <div class='mcard-label'>Harga Tertinggi</div>
+      <div class='mcard-value'>${df['High'].max():,.0f}</div>
+    </div>
+    """, unsafe_allow_html=True)
+with c4:
+    st.markdown(f"""
+    <div class='mcard'>
+      <div class='mcard-top'>
+        <div class='mcard-icon' style='background:rgba(244,63,94,.15)'>📉</div>
+      </div>
+      <div class='mcard-label'>Harga Terendah</div>
+      <div class='mcard-value'>${df['Low'].min():,.0f}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 st.divider()
 
