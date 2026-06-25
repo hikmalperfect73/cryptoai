@@ -40,12 +40,38 @@ st.markdown("""
     border: 1px solid rgba(59,130,246,0.2);
     border-radius: 16px;
     padding: 20px;
+    transition: all 0.25s ease;
+    animation: card-fade-in .5s ease-out both;
   }
 
   div[data-testid="metric-container"]:hover {
     border-color: rgba(59,130,246,0.5);
     background: rgba(59,130,246,0.12);
+    transform: translateY(-2px);
     transition: all 0.2s;
+  }
+
+  /* ===== FIX: angka metric kepotong "$60...." di layar sempit ===== */
+  [data-testid="stMetricValue"] {
+    font-size: clamp(1rem, 2.4vw, 1.8rem) !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    word-break: keep-all !important;
+    line-height: 1.25 !important;
+  }
+  [data-testid="stMetricLabel"] {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+  }
+  [data-testid="stMetricDelta"] {
+    white-space: normal !important;
+  }
+
+  @keyframes card-fade-in {
+    0%   { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
 
   .stButton > button,
@@ -118,6 +144,42 @@ st.markdown("""
     color: #93c5fd !important;
     font-weight: 600 !important;
     font-size: 13px !important;
+  }
+  .header-orb-1 {
+    position:absolute; top:-60px; right:-60px;
+    width:250px; height:250px; border-radius:50%;
+    background:radial-gradient(circle, rgba(14,165,233,0.15), transparent);
+    animation: orb-drift-1 9s ease-in-out infinite alternate;
+  }
+  .header-orb-2 {
+    position:absolute; bottom:-40px; left:-40px;
+    width:180px; height:180px; border-radius:50%;
+    background:radial-gradient(circle, rgba(29,78,216,0.12), transparent);
+    animation: orb-drift-2 11s ease-in-out infinite alternate;
+  }
+  @keyframes orb-drift-1 {
+    0%   { transform: translate(0,0) scale(1); }
+    100% { transform: translate(-18px, 14px) scale(1.08); }
+  }
+  @keyframes orb-drift-2 {
+    0%   { transform: translate(0,0) scale(1); }
+    100% { transform: translate(16px, -10px) scale(1.1); }
+  }
+
+  .signal-pulse {
+    animation: signal-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes signal-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+    50%      { opacity: .85; }
+  }
+
+  .pred-card {
+    animation: card-fade-in .45s ease-out both;
+    transition: transform .15s ease, border-color .15s ease;
+  }
+  .pred-card:hover {
+    transform: translateX(3px);
   }
 </style>
 """, unsafe_allow_html=True)
@@ -428,7 +490,7 @@ with st.sidebar:
            text-transform:uppercase; letter-spacing:0.1em;
            margin-bottom:8px'>AI Signal</div>
       <div style='font-size:20px; font-weight:800;
-           color:{warna_s}'>{sinyal}</div>
+           color:{warna_s}' class='signal-pulse'>{sinyal}</div>
       <div style='font-size:12px; color:#475569;
            margin-top:4px'>7 hari: {chg7:+.2f}%</div>
     </div>
@@ -453,14 +515,8 @@ st.markdown(f"""
      border-radius:24px; padding:32px; margin-bottom:24px;
      position:relative; overflow:hidden;
      box-shadow:0 8px 32px rgba(29,78,216,0.2)'>
-  <div style='position:absolute; top:-60px; right:-60px;
-       width:250px; height:250px; border-radius:50%;
-       background:radial-gradient(circle,
-       rgba(14,165,233,0.15), transparent)'></div>
-  <div style='position:absolute; bottom:-40px; left:-40px;
-       width:180px; height:180px; border-radius:50%;
-       background:radial-gradient(circle,
-       rgba(29,78,216,0.12), transparent)'></div>
+  <div class='header-orb-1'></div>
+  <div class='header-orb-2'></div>
   <div style='font-size:13px; font-weight:700; color:#38bdf8;
        letter-spacing:0.12em; text-transform:uppercase;
        margin-bottom:8px'>⚡ Live AI Trading Dashboard</div>
@@ -536,11 +592,12 @@ with tab1:
             chg = ((p - harga_terakhir) / harga_terakhir) * 100
             c = colors[i]
             st.markdown(f"""
-            <div style='background:rgba(59,130,246,0.06);
+            <div class='pred-card' style='background:rgba(59,130,246,0.06);
                  border:1px solid {c}44;
                  border-left:3px solid {c};
                  border-radius:12px; padding:12px 16px;
-                 margin-bottom:8px'>
+                 margin-bottom:8px;
+                 animation-delay:{i*0.08}s'>
               <div style='display:flex; justify-content:space-between'>
                 <span style='color:#93c5fd; font-size:12px;
                   font-weight:600'>Hari +{i+1}</span>
